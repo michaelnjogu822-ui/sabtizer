@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>A Question For You 🐾</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="card">
+        <img src="https://i.imgur.com/sxevOVa.jpeg" alt="cute animal" class="pet-img">
+        <h1>🌸 Will you go on a date with me? 🌸</h1>
+        <button class="yes-btn" onclick="goToYes()">YES 💕</button>
+        <button class="no-btn" id="noBtn">no... 🐾</button>
+    </div>
+
+    <script>
+        function goToYes() {
+            window.location.href = "yes.html";
+        }
+
+        const noBtn = document.getElementById("noBtn");
+        noBtn.addEventListener("mouseover", function () {
+            const x = Math.random() * 80;
+            const y = Math.random() * 80;
+            noBtn.style.position = "fixed";
+            noBtn.style.left = x + "vw";
+            noBtn.style.top = y + "vh";
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Yay! 🎉</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="card" id="page1">
+        <h1>glad you didn't say no. 😈</h1>
+        <p>be ready by 6, I'm coming to get you 🚗💨</p>
+        <br>
+        <p><i>P.S. normal people text. I made a website during lunch. no big deal.</i></p>
+        <br>
+        <button class="yes-btn" onclick="showDatePage()">So... when are you free? 📅</button>
+    </div>
+
+    <div class="card" id="page2" style="display:none;">
+        <h1>📅🐾 So... when are you free?</h1>
+        <br>
+        <label>Pick a Day 🌸</label><br><br>
+        <input type="date" id="datePicker">
+        <br><br>
+        <button class="yes-btn" onclick="setDate()">Set the date! 💕</button>
+    </div>
+
+    <div class="card" id="page3" style="display:none;">
+        <h1 id="confirmMsg"></h1>
+        <p>Get ready 💅 it's a date! 🚗🌸</p>
+    </div>
+
+    <script>
+        function showDatePage() {
+            document.getElementById("page1").style.display = "none";
+            document.getElementById("page2").style.display = "block";
+        }
+
+        function setDate() {
+            const date = document.getElementById("datePicker").value;
+            if (date === "") {
+                alert("Please pick a date first! 📅");
+                return;
+            }
+            document.getElementById("page2").style.display = "none";
+            document.getElementById("page3").style.display = "block";
+            document.getElementById("confirmMsg").innerText = "See you on " + date + "! 🎉";
+        }
+    </script>
+
+</body>
+
+</html>
