@@ -8,11 +8,11 @@ body {
 }
 
 .card {
-    background: white;
+    background: #ffffff;
     padding: 40px;
     border-radius: 20px;
     text-align: center;
-    box-shadow: 0 4px 20px pink;
+    box-shadow: 0 4px 20px rgba(233, 30, 99, 0.13);
 }
 
 .pet-img {
@@ -21,12 +21,12 @@ body {
 }
 
 h1 {
-    color: #c0006a;
+    color: #5d2a42;
 }
 
 .yes-btn {
-    background: hotpink;
-    color: white;
+    background: #e91e63;
+    color: #ffffff;
     padding: 12px 30px;
     border: none;
     border-radius: 20px;
@@ -36,7 +36,8 @@ h1 {
 }
 
 .no-btn {
-    background: #ddd;
+    background: #fce4ec;
+    color: #a06080;
     padding: 10px 20px;
     border: none;
     border-radius: 20px;
