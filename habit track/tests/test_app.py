@@ -511,6 +511,54 @@ class HabitTrackerTests(unittest.TestCase):
         overview = self.client.get("/overview")
         self.assertEqual(overview.status_code, 200)
         overview.close()
+        static_response = self.client.get("/static/css/style.css")
+        self.assertEqual(static_response.status_code, 200)
+        static_response.close()
+
+    def test_postgres_adapter_translates_sqlite_placeholders_and_date_modifier(self):
+        class FakeConnection:
+            def __init__(self):
+                self.statement = None
+                self.parameters = None
+
+            def execute(self, statement, parameters):
+                self.statement = statement
+                self.parameters = parameters
+                return "cursor"
+
+        connection = FakeConnection()
+        adapter = habit_app.PostgresConnection(connection)
+        result = adapter.execute(
+            "SELECT id FROM completions WHERE user_id = ? AND completed_on >= date(?, '-11 months')",
+            (7, "2026-11-01"),
+        )
+        self.assertEqual(result, "cursor")
+        self.assertEqual(
+            connection.statement,
+            "SELECT id FROM completions WHERE user_id = %s AND completed_on >= "
+            "to_char(%s::date - INTERVAL '11 months', 'YYYY-MM-DD')",
+        )
+        self.assertEqual(connection.parameters, (7, "2026-11-01"))
+
+        adapter.execute("BEGIN IMMEDIATE")
+        self.assertEqual(connection.statement, "BEGIN")
+
+    def test_postgres_rows_support_named_and_positional_access(self):
+        class FakeColumn:
+            name = "user_id"
+
+        class FakeCursor:
+            description = [FakeColumn()]
+
+        row_factory = habit_app.hybrid_row(FakeCursor())
+        row = row_factory((42,))
+        self.assertEqual(row["user_id"], 42)
+        self.assertEqual(row[0], 42)
+
+        class EmptyCursor:
+            description = None
+
+        self.assertIs(habit_app.hybrid_row(EmptyCursor()), tuple)
 
 
 if __name__ == "__main__":

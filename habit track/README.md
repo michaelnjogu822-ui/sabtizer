@@ -38,6 +38,17 @@ python app.py promote-admin admin@example.com
 
 Administrators can view workspace totals, promote or demote accounts, create, rename, and delete any user's habits, and delete accounts with their associated data from the Overview's Admin console. The last administrator cannot be demoted or deleted. Regular accounts can manage only their own habits and data.
 
+## Deploy to Vercel with Neon
+
+The app uses local SQLite by default for development. On Vercel, configure `DATABASE_URL` with the pooled connection string from your Neon project; PostgreSQL tables are initialized automatically. The serverless filesystem is not used for production data.
+
+1. In Vercel, import the GitHub repository and set **Root Directory** to `habit track`.
+2. Create a Neon project and copy its pooled PostgreSQL connection string into the Vercel `DATABASE_URL` environment variable.
+3. Add a long, random `SECRET_KEY`. To bootstrap the first admin, also set `ADMIN_EMAIL`, `ADMIN_NAME`, and `ADMIN_PASSWORD`.
+4. Deploy. Visit `/overview` for the redesigned dashboard or `/` for the full habit tracker. After the first successful admin setup, remove the `ADMIN_*` values and redeploy.
+
+Use the pooled Neon URL for serverless deployments. Configure the environment variables for Production (and Preview if you want preview deployments to use a separate database). Never commit database URLs, passwords, or secret keys.
+
 ## What's included
 
 - Account registration, login, logout, hashed passwords, and profile/password updates.
