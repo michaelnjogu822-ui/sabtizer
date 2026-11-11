@@ -1,0 +1,1055 @@
+import hmac
+import json
+import os
+import re
+import secrets
+import sqlite3
+import sys
+from datetime import date, timedelta
+from functools import wraps
+from pathlib import Path
+
+from flask import Flask, g, jsonify, render_template, request, send_file, session
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from assistant_service import generate_reply
+
+
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = Path(os.environ.get("HABIT_TRACK_DATABASE", BASE_DIR / "instance" / "habits.sqlite3"))
+CATEGORIES = {
+    "Health", "Fitness", "Education", "Productivity",
+    "Personal Development", "Finance", "Spiritual Growth", "Other",
+}
+FREQUENCIES = {"daily", "weekly", "selected"}
+WEEKDAYS = set(range(7))
+MOODS = {"Happy", "Motivated", "Normal", "Tired", "Stressed"}
+
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR),
+    instance_path=str(BASE_DIR / "instance"),
+    instance_relative_config=True,
+)
+app.config.update(
+    SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "").lower() == "true",
+    PERMANENT_SESSION_LIFETIME=timedelta(days=14),
+    MAX_CONTENT_LENGTH=64 * 1024,
+)
+login_manager = LoginManager(app)
+
+
+class User(UserMixin):
+    def __init__(self, row):
+        self.id = str(row["id"])
+        self.name = row["name"]
+        self.email = row["email"]
+        self.role = row["role"]
+
+
+def get_db():
+    if "db" not in g:
+        DATABASE.parent.mkdir(parents=True, exist_ok=True)
+        g.db = sqlite3.connect(DATABASE, timeout=10)
+        g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
+        g.db.execute("PRAGMA journal_mode = WAL")
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(_error=None):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+def init_db():
+    db = get_db()
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+            freeze_tokens INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS habits (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            category TEXT NOT NULL DEFAULT 'Other',
+            frequency TEXT NOT NULL DEFAULT 'daily',
+            selected_days TEXT NOT NULL DEFAULT '[]',
+            preferred_time TEXT NOT NULL DEFAULT '',
+            icon TEXT NOT NULL DEFAULT 'fa-seedling',
+            color TEXT NOT NULL DEFAULT '#5c8466',
+            reminder_time TEXT NOT NULL DEFAULT '',
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS completions (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+            completed_on TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(habit_id, completed_on)
+        );
+        CREATE TABLE IF NOT EXISTS mood_logs (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            logged_on TEXT NOT NULL,
+            mood TEXT NOT NULL,
+            PRIMARY KEY(user_id, logged_on)
+        );
+        CREATE TABLE IF NOT EXISTS journal_entries (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            logged_on TEXT NOT NULL,
+            accomplished TEXT NOT NULL DEFAULT '',
+            challenged TEXT NOT NULL DEFAULT '',
+            improve TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY(user_id, logged_on)
+        );
+        CREATE TABLE IF NOT EXISTS streak_freezes (
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            frozen_on TEXT NOT NULL,
+            PRIMARY KEY(user_id, frozen_on)
+        );
+        CREATE TABLE IF NOT EXISTS focus_sessions (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            activity TEXT NOT NULL,
+            duration_minutes INTEGER NOT NULL,
+            completed_on TEXT NOT NULL
+        );
+        """
+    )
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
+    if "role" not in columns:
+        db.execute(
+            "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' "
+            "CHECK (role IN ('user', 'admin'))"
+        )
+    db.commit()
+    bootstrap_admin(db)
+
+
+def bootstrap_admin(db):
+    email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    name = os.environ.get("ADMIN_NAME", "").strip()
+    password = os.environ.get("ADMIN_PASSWORD", "")
+    configured = (email, name, password)
+    if not any(configured):
+        return
+    if not all(configured):
+        raise RuntimeError("Set ADMIN_EMAIL, ADMIN_NAME, and ADMIN_PASSWORD together.")
+    if len(name) > 60 or len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise RuntimeError("ADMIN_NAME or ADMIN_EMAIL is invalid.")
+    if not 10 <= len(password) <= 128:
+        raise RuntimeError("ADMIN_PASSWORD must be between 10 and 128 characters.")
+
+    seeded = db.execute(
+        "SELECT value FROM app_settings WHERE key = 'admin_env_bootstrapped'"
+    ).fetchone()
+    if seeded:
+        return
+    admin_exists = db.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone()
+    if not admin_exists:
+        existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        if existing:
+            db.execute("UPDATE users SET role = 'admin' WHERE id = ?", (existing["id"],))
+        else:
+            db.execute(
+                "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')",
+                (name, email, generate_password_hash(password)),
+            )
+    db.execute(
+        "INSERT INTO app_settings (key, value) VALUES ('admin_env_bootstrapped', '1')"
+    )
+    db.commit()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    row = get_db().execute(
+        "SELECT id, name, email, role FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    return User(row) if row else None
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    return jsonify(error="Please log in to continue."), 401
+
+
+def admin_required(function):
+    @wraps(function)
+    @login_required
+    def decorated(*args, **kwargs):
+        if current_user.role != "admin":
+            return jsonify(error="Administrator access is required."), 403
+        return function(*args, **kwargs)
+    return decorated
+
+
+def csrf_token():
+    token = session.get("_csrf_token")
+    if token is None:
+        token = secrets.token_urlsafe(32)
+        session["_csrf_token"] = token
+    return token
+
+
+@app.context_processor
+def inject_csrf_token():
+    return {"csrf_token": csrf_token}
+
+
+@app.before_request
+def protect_state_changes():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    expected = session.get("_csrf_token", "")
+    supplied = request.headers.get("X-CSRF-Token", "")
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify(error="Your session token expired. Refresh the page and try again."), 403
+    return None
+
+
+def json_body():
+    if not request.is_json:
+        return None
+    value = request.get_json(silent=True)
+    return value if isinstance(value, dict) else None
+
+
+def api_endpoint(function):
+    @wraps(function)
+    def decorated(*args, **kwargs):
+        body = json_body()
+        if body is None and request.method in {"POST", "PUT", "PATCH"}:
+            return jsonify(error="A valid JSON request body is required."), 400
+        return function(body, *args, **kwargs)
+    return decorated
+
+
+def parse_date(value):
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def user_habits(db, user_id, include_inactive=False):
+    query = "SELECT * FROM habits WHERE user_id = ?"
+    if not include_inactive:
+        query += " AND active = 1"
+    query += " ORDER BY created_at, id"
+    return db.execute(query, (user_id,)).fetchall()
+
+
+def habit_is_due(habit, on_date):
+    if habit["frequency"] == "daily":
+        return True
+    if habit["frequency"] == "weekly":
+        return False
+    try:
+        selected = json.loads(habit["selected_days"])
+    except (json.JSONDecodeError, TypeError):
+        selected = []
+    return on_date.weekday() in selected
+
+
+def user_streak_data(db, user_id, today):
+    activity_rows = db.execute(
+        "SELECT completed_on AS day FROM completions WHERE user_id = ? "
+        "UNION SELECT frozen_on AS day FROM streak_freezes WHERE user_id = ? "
+        "ORDER BY day DESC",
+        (user_id, user_id),
+    ).fetchall()
+    active_days = {row["day"] for row in activity_rows}
+    cursor_day = today if today.isoformat() in active_days else today - timedelta(days=1)
+    current = 0
+    while cursor_day.isoformat() in active_days:
+        current += 1
+        cursor_day -= timedelta(days=1)
+    sorted_days = sorted(date.fromisoformat(day) for day in active_days)
+    longest = 0
+    run = 0
+    previous = None
+    for active_day in sorted_days:
+        run = run + 1 if previous and active_day == previous + timedelta(days=1) else 1
+        longest = max(longest, run)
+        previous = active_day
+    return current, longest, active_days
+
+
+def dashboard_data(db, user_id, selected_date):
+    habits = user_habits(db, user_id)
+    completion_rows = db.execute(
+        "SELECT habit_id FROM completions WHERE user_id = ? AND completed_on = ?",
+        (user_id, selected_date.isoformat()),
+    ).fetchall()
+    completed_ids = {row["habit_id"] for row in completion_rows}
+    habit_items = []
+    due = 0
+    completed_due = 0
+    for habit in habits:
+        is_completed = habit["id"] in completed_ids
+        is_due = is_completed or habit_is_due(habit, selected_date)
+        if habit["frequency"] == "weekly" and not is_completed:
+            week_start = selected_date - timedelta(days=selected_date.weekday())
+            completed_this_week = db.execute(
+                "SELECT 1 FROM completions WHERE habit_id = ? AND user_id = ? "
+                "AND completed_on >= ? AND completed_on <= ? LIMIT 1",
+                (habit["id"], user_id, week_start.isoformat(), selected_date.isoformat()),
+            ).fetchone()
+            is_due = completed_this_week is None
+        due += int(is_due)
+        completed_due += int(is_due and is_completed)
+        habit_items.append({
+            "id": habit["id"],
+            "name": habit["name"],
+            "description": habit["description"],
+            "category": habit["category"],
+            "frequency": habit["frequency"],
+            "selected_days": json.loads(habit["selected_days"]),
+            "preferred_time": habit["preferred_time"],
+            "icon": habit["icon"],
+            "color": habit["color"],
+            "reminder_time": habit["reminder_time"],
+            "completed": is_completed,
+            "due": is_due,
+        })
+    current, longest, active_days = user_streak_data(db, user_id, selected_date)
+    completed_total = db.execute(
+        "SELECT COUNT(*) AS count FROM completions WHERE user_id = ?", (user_id,)
+    ).fetchone()["count"]
+    user = db.execute(
+        "SELECT name, freeze_tokens FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    earned = {
+        milestone: current >= milestone
+        for milestone in (7, 14, 30, 100)
+    }
+    return {
+        "user": {"name": user["name"], "freeze_tokens": user["freeze_tokens"]},
+        "date": selected_date.isoformat(),
+        "habits": habit_items,
+        "summary": {
+            "active_habits": len(habits),
+            "completed": completed_due,
+            "remaining": max(due - completed_due, 0),
+            "due": due,
+            "percentage": round(completed_due * 100 / due) if due else 0,
+            "current_streak": current,
+            "longest_streak": longest,
+            "total_completions": completed_total,
+            "xp": completed_total * 10,
+            "level": completed_total // 10 + 1,
+            "milestones": earned,
+            "completed_dates": sorted(active_days),
+        },
+    }
+
+
+@app.get("/")
+def home():
+    return render_template("index.html")
+
+
+@app.get("/overview")
+def overview():
+    return send_file(BASE_DIR.parent / "mit.html")
+
+
+@app.get("/api/health")
+def health():
+    return jsonify(status="ok")
+
+
+@app.get("/api/auth/me")
+def auth_me():
+    csrf_token()
+    if not current_user.is_authenticated:
+        return jsonify(authenticated=False, csrf_token=session["_csrf_token"])
+    return jsonify(
+        authenticated=True,
+        user={"name": current_user.name, "email": current_user.email, "role": current_user.role},
+        csrf_token=session["_csrf_token"],
+    )
+
+
+@app.post("/api/auth/register")
+@api_endpoint
+def register(body):
+    name = str(body.get("name", "")).strip()
+    email = str(body.get("email", "")).strip().lower()
+    password = body.get("password", "")
+    if len(name) < 1 or len(name) > 60:
+        return jsonify(error="Enter a name between 1 and 60 characters."), 400
+    if len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return jsonify(error="Enter a valid email address."), 400
+    if not isinstance(password, str) or len(password) < 10 or len(password) > 128:
+        return jsonify(error="Your password must be between 10 and 128 characters."), 400
+    db = get_db()
+    try:
+        cursor = db.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, generate_password_hash(password)),
+        )
+        db.commit()
+    except sqlite3.IntegrityError:
+        return jsonify(error="An account with that email already exists."), 409
+    row = db.execute(
+        "SELECT id, name, email, role FROM users WHERE id = ?", (cursor.lastrowid,)
+    ).fetchone()
+    session.clear()
+    login_user(User(row), remember=True)
+    csrf_token()
+    return jsonify(
+        user={"name": row["name"], "email": row["email"], "role": row["role"]},
+        csrf_token=session["_csrf_token"],
+    ), 201
+
+
+@app.post("/api/auth/login")
+@api_endpoint
+def login(body):
+    email = str(body.get("email", "")).strip().lower()
+    password = body.get("password", "")
+    if not isinstance(password, str):
+        return jsonify(error="Enter your email and password."), 400
+    row = get_db().execute(
+        "SELECT id, name, email, password_hash, role FROM users WHERE email = ?", (email,)
+    ).fetchone()
+    if not row or not check_password_hash(row["password_hash"], password):
+        return jsonify(error="That email and password don’t match."), 401
+    session.clear()
+    login_user(User(row), remember=bool(body.get("remember", True)))
+    csrf_token()
+    return jsonify(
+        user={"name": row["name"], "email": row["email"], "role": row["role"]},
+        csrf_token=session["_csrf_token"],
+    )
+
+
+@app.post("/api/auth/logout")
+@login_required
+def logout():
+    logout_user()
+    session.clear()
+    session["_remember"] = "clear"
+    csrf_token()
+    return jsonify(ok=True, csrf_token=session["_csrf_token"])
+
+
+@app.put("/api/auth/profile")
+@login_required
+@api_endpoint
+def update_profile(body):
+    name = str(body.get("name", "")).strip()
+    if not name or len(name) > 60:
+        return jsonify(error="Enter a name between 1 and 60 characters."), 400
+    db = get_db()
+    if body.get("new_password"):
+        row = db.execute(
+            "SELECT password_hash FROM users WHERE id = ?", (int(current_user.id),)
+        ).fetchone()
+        current_password = body.get("current_password", "")
+        new_password = body["new_password"]
+        if not isinstance(current_password, str) or not check_password_hash(row["password_hash"], current_password):
+            return jsonify(error="Your current password doesn’t match."), 400
+        if not isinstance(new_password, str) or not 10 <= len(new_password) <= 128:
+            return jsonify(error="Your new password must be between 10 and 128 characters."), 400
+        db.execute(
+            "UPDATE users SET name = ?, password_hash = ? WHERE id = ?",
+            (name, generate_password_hash(new_password), int(current_user.id)),
+        )
+    else:
+        db.execute("UPDATE users SET name = ? WHERE id = ?", (name, int(current_user.id)))
+    db.commit()
+    return jsonify(user={"name": name, "email": current_user.email})
+
+
+@app.get("/api/admin/overview")
+@admin_required
+def admin_overview():
+    db = get_db()
+    return jsonify(
+        users=db.execute("SELECT COUNT(*) FROM users").fetchone()[0],
+        admins=db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0],
+        habits=db.execute("SELECT COUNT(*) FROM habits WHERE active = 1").fetchone()[0],
+        completions=db.execute("SELECT COUNT(*) FROM completions").fetchone()[0],
+    )
+
+
+@app.get("/api/admin/users")
+@admin_required
+def admin_users():
+    rows = get_db().execute(
+        """SELECT u.id, u.name, u.email, u.role, u.created_at,
+        COUNT(DISTINCT CASE WHEN h.active = 1 THEN h.id END) AS active_habits,
+        COUNT(DISTINCT c.id) AS completions
+        FROM users u
+        LEFT JOIN habits h ON h.user_id = u.id
+        LEFT JOIN completions c ON c.user_id = u.id
+        GROUP BY u.id
+        ORDER BY u.created_at, u.id"""
+    ).fetchall()
+    return jsonify([
+        {
+            "id": row["id"],
+            "name": row["name"],
+            "email": row["email"],
+            "role": row["role"],
+            "created_at": row["created_at"],
+            "active_habits": row["active_habits"],
+            "completions": row["completions"],
+        }
+        for row in rows
+    ])
+
+
+@app.put("/api/admin/users/<int:user_id>/role")
+@login_required
+@api_endpoint
+def update_user_role(body, user_id):
+    if current_user.role != "admin":
+        return jsonify(error="Administrator access is required."), 403
+    role = body.get("role")
+    if not isinstance(role, str) or role not in {"user", "admin"}:
+        return jsonify(error="Choose a valid user role."), 400
+    db = get_db()
+    target = db.execute("SELECT id, role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not target:
+        return jsonify(error="User not found."), 404
+    if target["role"] == "admin" and role == "user":
+        admin_count = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        ).fetchone()[0]
+        if admin_count <= 1:
+            return jsonify(error="The last administrator cannot be demoted."), 409
+    db.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
+    db.commit()
+    return jsonify(ok=True, role=role)
+
+
+@app.delete("/api/admin/users/<int:user_id>")
+@login_required
+def delete_user(user_id):
+    if current_user.role != "admin":
+        return jsonify(error="Administrator access is required."), 403
+    if user_id == int(current_user.id):
+        return jsonify(error="You cannot delete your own administrator account."), 409
+    db = get_db()
+    target = db.execute("SELECT id, role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not target:
+        return jsonify(error="User not found."), 404
+    if target["role"] == "admin":
+        admin_count = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        ).fetchone()[0]
+        if admin_count <= 1:
+            return jsonify(error="The last administrator cannot be deleted."), 409
+    db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    db.commit()
+    return jsonify(ok=True)
+
+
+@app.get("/api/dashboard")
+@login_required
+def dashboard():
+    date_value = request.args.get("date")
+    selected_date = parse_date(date_value) if date_value else date.today()
+    if selected_date is None:
+        return jsonify(error="Choose a valid date."), 400
+    return jsonify(dashboard_data(get_db(), int(current_user.id), selected_date))
+
+
+def validate_habit(body):
+    name = str(body.get("name", "")).strip()
+    if not name or len(name) > 80:
+        return None, "Habit name must be between 1 and 80 characters."
+    category = str(body.get("category", "Other"))
+    if category not in CATEGORIES:
+        return None, "Choose a valid habit category."
+    frequency = str(body.get("frequency", "daily"))
+    if frequency not in FREQUENCIES:
+        return None, "Choose a valid habit frequency."
+    days = body.get("selected_days", [])
+    if not isinstance(days, list) or any(type(day) is not int or day not in WEEKDAYS for day in days):
+        return None, "Choose valid days of the week."
+    if frequency == "selected" and not days:
+        return None, "Choose at least one day for this habit."
+    preferred_time = str(body.get("preferred_time", ""))
+    reminder_time = str(body.get("reminder_time", ""))
+    for time_value in (preferred_time, reminder_time):
+        if time_value and not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", time_value):
+            return None, "Enter a valid time."
+    color = str(body.get("color", "#5c8466"))
+    if len(color) != 7 or not color.startswith("#") or any(ch not in "0123456789abcdefABCDEF" for ch in color[1:]):
+        return None, "Choose a valid habit color."
+    return {
+        "name": name,
+        "description": str(body.get("description", "")).strip()[:300],
+        "category": category,
+        "frequency": frequency,
+        "selected_days": json.dumps(sorted(set(days))),
+        "preferred_time": preferred_time,
+        "icon": str(body.get("icon", "fa-seedling"))[:40],
+        "color": color,
+        "reminder_time": reminder_time,
+    }, None
+
+
+@app.get("/api/admin/habits")
+@admin_required
+def admin_habits():
+    rows = get_db().execute(
+        """SELECT h.*, u.name AS user_name, u.email AS user_email
+        FROM habits h JOIN users u ON u.id = h.user_id
+        ORDER BY h.created_at DESC, h.id DESC"""
+    ).fetchall()
+    return jsonify([
+        {
+            "id": row["id"],
+            "user_id": row["user_id"],
+            "user_name": row["user_name"],
+            "user_email": row["user_email"],
+            "name": row["name"],
+            "description": row["description"],
+            "category": row["category"],
+            "frequency": row["frequency"],
+            "selected_days": json.loads(row["selected_days"]),
+            "preferred_time": row["preferred_time"],
+            "icon": row["icon"],
+            "color": row["color"],
+            "reminder_time": row["reminder_time"],
+            "active": bool(row["active"]),
+        }
+        for row in rows
+    ])
+
+
+@app.post("/api/admin/users/<int:user_id>/habits")
+@login_required
+@api_endpoint
+def admin_create_habit(body, user_id):
+    if current_user.role != "admin":
+        return jsonify(error="Administrator access is required."), 403
+    db = get_db()
+    if not db.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone():
+        return jsonify(error="User not found."), 404
+    values, error = validate_habit(body)
+    if error:
+        return jsonify(error=error), 400
+    cursor = db.execute(
+        """INSERT INTO habits
+        (user_id, name, description, category, frequency, selected_days,
+         preferred_time, icon, color, reminder_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, *values.values()),
+    )
+    db.commit()
+    return jsonify(id=cursor.lastrowid), 201
+
+
+@app.route("/api/admin/habits/<int:habit_id>", methods=["PUT", "DELETE"])
+@login_required
+def admin_habit_detail(habit_id):
+    if current_user.role != "admin":
+        return jsonify(error="Administrator access is required."), 403
+    db = get_db()
+    habit = db.execute("SELECT id FROM habits WHERE id = ?", (habit_id,)).fetchone()
+    if not habit:
+        return jsonify(error="Habit not found."), 404
+    if request.method == "DELETE":
+        db.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
+        db.commit()
+        return jsonify(ok=True)
+    body = json_body()
+    if body is None:
+        return jsonify(error="A valid JSON request body is required."), 400
+    values, error = validate_habit(body)
+    if error:
+        return jsonify(error=error), 400
+    db.execute(
+        """UPDATE habits SET name = ?, description = ?, category = ?, frequency = ?,
+        selected_days = ?, preferred_time = ?, icon = ?, color = ?, reminder_time = ?
+        WHERE id = ?""",
+        (*values.values(), habit_id),
+    )
+    db.commit()
+    return jsonify(ok=True)
+
+
+@app.get("/api/habits")
+@login_required
+def list_habits():
+    date_value = request.args.get("date")
+    selected_date = parse_date(date_value) if date_value else date.today()
+    if selected_date is None:
+        return jsonify(error="Choose a valid date."), 400
+    return jsonify(dashboard_data(get_db(), int(current_user.id), selected_date)["habits"])
+
+
+@app.post("/api/habits")
+@login_required
+@api_endpoint
+def create_habit(body):
+    values, error = validate_habit(body)
+    if error:
+        return jsonify(error=error), 400
+    db = get_db()
+    cursor = db.execute(
+        """INSERT INTO habits
+        (user_id, name, description, category, frequency, selected_days,
+         preferred_time, icon, color, reminder_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (int(current_user.id), *values.values()),
+    )
+    db.commit()
+    row = db.execute(
+        "SELECT id FROM habits WHERE id = ? AND user_id = ?",
+        (cursor.lastrowid, int(current_user.id)),
+    ).fetchone()
+    return jsonify(id=row["id"]), 201
+
+
+@app.route("/api/habits/<int:habit_id>", methods=["PUT", "DELETE"])
+@login_required
+def habit_detail(habit_id):
+    db = get_db()
+    habit = db.execute(
+        "SELECT id FROM habits WHERE id = ? AND user_id = ?",
+        (habit_id, int(current_user.id)),
+    ).fetchone()
+    if not habit:
+        return jsonify(error="Habit not found."), 404
+    if request.method == "DELETE":
+        db.execute("DELETE FROM habits WHERE id = ? AND user_id = ?", (habit_id, int(current_user.id)))
+        db.commit()
+        return jsonify(ok=True)
+    body = json_body()
+    if body is None:
+        return jsonify(error="A valid JSON request body is required."), 400
+    values, error = validate_habit(body)
+    if error:
+        return jsonify(error=error), 400
+    db.execute(
+        """UPDATE habits SET name = ?, description = ?, category = ?, frequency = ?,
+        selected_days = ?, preferred_time = ?, icon = ?, color = ?, reminder_time = ?
+        WHERE id = ? AND user_id = ?""",
+        (*values.values(), habit_id, int(current_user.id)),
+    )
+    db.commit()
+    return jsonify(ok=True)
+
+
+@app.post("/api/habits/<int:habit_id>/complete")
+@login_required
+@api_endpoint
+def toggle_completion(body, habit_id):
+    completed_on = parse_date(body.get("date"))
+    if completed_on is None or completed_on > date.today():
+        return jsonify(error="Choose a valid date that is not in the future."), 400
+    db = get_db()
+    habit = db.execute(
+        "SELECT id FROM habits WHERE id = ? AND user_id = ? AND active = 1",
+        (habit_id, int(current_user.id)),
+    ).fetchone()
+    if not habit:
+        return jsonify(error="Habit not found."), 404
+    existing = db.execute(
+        "SELECT id FROM completions WHERE habit_id = ? AND completed_on = ? AND user_id = ?",
+        (habit_id, completed_on.isoformat(), int(current_user.id)),
+    ).fetchone()
+    if existing:
+        db.execute("DELETE FROM completions WHERE id = ? AND user_id = ?", (existing["id"], int(current_user.id)))
+        completed = False
+    else:
+        db.execute(
+            "INSERT INTO completions (user_id, habit_id, completed_on) VALUES (?, ?, ?)",
+            (int(current_user.id), habit_id, completed_on.isoformat()),
+        )
+        completed = True
+    db.commit()
+    return jsonify(completed=completed, dashboard=dashboard_data(db, int(current_user.id), completed_on))
+
+
+@app.get("/api/calendar")
+@login_required
+def calendar():
+    month_value = request.args.get("month", date.today().strftime("%Y-%m"))
+    try:
+        month_start = date.fromisoformat(f"{month_value}-01")
+    except ValueError:
+        return jsonify(error="Choose a valid month."), 400
+    next_month = date(month_start.year + (month_start.month == 12), month_start.month % 12 + 1, 1)
+    db = get_db()
+    rows = db.execute(
+        "SELECT completed_on, COUNT(*) AS count FROM completions "
+        "WHERE user_id = ? AND completed_on >= ? AND completed_on < ? "
+        "GROUP BY completed_on",
+        (int(current_user.id), month_start.isoformat(), next_month.isoformat()),
+    ).fetchall()
+    completions = {row["completed_on"]: row["count"] for row in rows}
+    freezes = db.execute(
+        "SELECT frozen_on FROM streak_freezes WHERE user_id = ? AND frozen_on >= ? AND frozen_on < ?",
+        (int(current_user.id), month_start.isoformat(), next_month.isoformat()),
+    ).fetchall()
+    return jsonify(
+        month=month_value,
+        completions=completions,
+        freezes=[row["frozen_on"] for row in freezes],
+        start_weekday=month_start.weekday(),
+        days=(next_month - month_start).days,
+    )
+
+
+@app.get("/api/analytics")
+@login_required
+def analytics():
+    db = get_db()
+    user_id = int(current_user.id)
+    today = date.today()
+    start = today - timedelta(days=6)
+    daily = db.execute(
+        "SELECT completed_on, COUNT(*) AS count FROM completions "
+        "WHERE user_id = ? AND completed_on >= ? AND completed_on <= ? "
+        "GROUP BY completed_on ORDER BY completed_on",
+        (user_id, start.isoformat(), today.isoformat()),
+    ).fetchall()
+    monthly_start = today.replace(day=1)
+    monthly = db.execute(
+        "SELECT substr(completed_on, 1, 7) AS month, COUNT(*) AS count FROM completions "
+        "WHERE user_id = ? AND completed_on >= date(?, '-11 months') "
+        "GROUP BY month ORDER BY month",
+        (user_id, monthly_start.isoformat()),
+    ).fetchall()
+    habit_stats = db.execute(
+        """SELECT h.id, h.name, h.color, h.frequency, h.selected_days, COUNT(c.id) AS completed,
+        SUM(CASE WHEN c.completed_on >= ? THEN 1 ELSE 0 END) AS recent
+        FROM habits h LEFT JOIN completions c ON c.habit_id = h.id AND c.user_id = h.user_id
+        WHERE h.user_id = ? AND h.active = 1
+        GROUP BY h.id ORDER BY completed DESC, h.name""",
+        ((today - timedelta(days=29)).isoformat(), user_id),
+    ).fetchall()
+    mood_rows = db.execute(
+        "SELECT logged_on, mood FROM mood_logs WHERE user_id = ? AND logged_on >= ? ORDER BY logged_on",
+        (user_id, (today - timedelta(days=29)).isoformat()),
+    ).fetchall()
+    mood_counts = {mood: 0 for mood in MOODS}
+    for row in mood_rows:
+        mood_counts[row["mood"]] += 1
+    habit_history = db.execute(
+        "SELECT completed_on, COUNT(*) AS count FROM completions "
+        "WHERE user_id = ? AND completed_on >= ? GROUP BY completed_on",
+        (user_id, (today - timedelta(days=29)).isoformat()),
+    ).fetchall()
+    total = sum(row["completed"] for row in habit_stats)
+    consistency_rows = []
+    period_start = today - timedelta(days=29)
+    for row in habit_stats:
+        if row["frequency"] == "daily":
+            due_count = 30
+        elif row["frequency"] == "weekly":
+            due_count = len({
+                (period_start + timedelta(days=offset)).isocalendar()[:2]
+                for offset in range(30)
+            })
+        else:
+            try:
+                selected_days = set(json.loads(row["selected_days"]))
+            except (json.JSONDecodeError, TypeError):
+                selected_days = set()
+            due_count = sum(
+                (period_start + timedelta(days=offset)).weekday() in selected_days
+                for offset in range(30)
+            )
+        recent = row["recent"] or 0
+        consistency_rows.append({
+            "id": row["id"],
+            "name": row["name"],
+            "color": row["color"],
+            "completed": row["completed"],
+            "recent": recent,
+            "due_count": due_count,
+            "consistency_percent": round(min(recent, due_count) * 100 / due_count) if due_count else 0,
+        })
+    consistency_rows.sort(key=lambda row: (-row["consistency_percent"], -row["recent"], row["name"]))
+    return jsonify(
+        weekly=[{"date": (start + timedelta(days=i)).isoformat(),
+                 "count": next((row["count"] for row in daily if row["completed_on"] == (start + timedelta(days=i)).isoformat()), 0)}
+                for i in range(7)],
+        monthly=[{"month": row["month"], "count": row["count"]} for row in monthly],
+        habits=consistency_rows,
+        mood_history=[{"date": row["logged_on"], "mood": row["mood"]} for row in mood_rows],
+        mood_counts=mood_counts,
+        habit_history=[{"date": row["completed_on"], "count": row["count"]} for row in habit_history],
+        total_completions=total,
+    )
+
+
+@app.route("/api/journal", methods=["GET", "POST"])
+@login_required
+def journal():
+    db = get_db()
+    user_id = int(current_user.id)
+    if request.method == "GET":
+        date_value = request.args.get("date")
+        selected = parse_date(date_value) if date_value else date.today()
+        if selected is None:
+            return jsonify(error="Choose a valid date."), 400
+        row = db.execute(
+            "SELECT accomplished, challenged, improve FROM journal_entries WHERE user_id = ? AND logged_on = ?",
+            (user_id, selected.isoformat()),
+        ).fetchone()
+        return jsonify(date=selected.isoformat(), entry=dict(row) if row else None)
+    body = json_body()
+    if body is None:
+        return jsonify(error="A valid JSON request body is required."), 400
+    logged_on = parse_date(body.get("date"))
+    if logged_on is None or logged_on > date.today():
+        return jsonify(error="Choose a valid date that is not in the future."), 400
+    fields = [str(body.get(key, "")).strip()[:1000] for key in ("accomplished", "challenged", "improve")]
+    db.execute(
+        """INSERT INTO journal_entries (user_id, logged_on, accomplished, challenged, improve)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, logged_on) DO UPDATE SET
+        accomplished = excluded.accomplished, challenged = excluded.challenged, improve = excluded.improve""",
+        (user_id, logged_on.isoformat(), *fields),
+    )
+    db.commit()
+    return jsonify(ok=True)
+
+
+@app.route("/api/mood", methods=["GET", "POST"])
+@login_required
+def mood():
+    db = get_db()
+    user_id = int(current_user.id)
+    if request.method == "GET":
+        rows = db.execute(
+            "SELECT logged_on, mood FROM mood_logs WHERE user_id = ? ORDER BY logged_on DESC LIMIT 90",
+            (user_id,),
+        ).fetchall()
+        return jsonify([{"date": row["logged_on"], "mood": row["mood"]} for row in rows])
+    body = json_body()
+    if body is None:
+        return jsonify(error="A valid JSON request body is required."), 400
+    logged_on = parse_date(body.get("date"))
+    mood_value = body.get("mood")
+    if logged_on is None or logged_on > date.today() or mood_value not in MOODS:
+        return jsonify(error="Choose a valid mood and date."), 400
+    db.execute(
+        """INSERT INTO mood_logs (user_id, logged_on, mood) VALUES (?, ?, ?)
+        ON CONFLICT(user_id, logged_on) DO UPDATE SET mood = excluded.mood""",
+        (user_id, logged_on.isoformat(), mood_value),
+    )
+    db.commit()
+    return jsonify(ok=True)
+
+
+@app.post("/api/streak/freeze")
+@login_required
+def streak_freeze():
+    db = get_db()
+    user_id = int(current_user.id)
+    freeze_date = date.today() - timedelta(days=1)
+    if freeze_date.isoformat() in {
+        row["day"] for row in db.execute(
+            "SELECT completed_on AS day FROM completions WHERE user_id = ? "
+            "UNION SELECT frozen_on AS day FROM streak_freezes WHERE user_id = ?",
+            (user_id, user_id),
+        ).fetchall()
+    }:
+        return jsonify(error="Yesterday is already covered."), 400
+    db.execute("BEGIN IMMEDIATE")
+    user = db.execute("SELECT freeze_tokens FROM users WHERE id = ?", (user_id,)).fetchone()
+    if user["freeze_tokens"] < 1:
+        db.rollback()
+        return jsonify(error="You don’t have a streak freeze available."), 400
+    db.execute("UPDATE users SET freeze_tokens = freeze_tokens - 1 WHERE id = ?", (user_id,))
+    db.execute("INSERT INTO streak_freezes (user_id, frozen_on) VALUES (?, ?)", (user_id, freeze_date.isoformat()))
+    db.commit()
+    return jsonify(ok=True, dashboard=dashboard_data(db, user_id, date.today()))
+
+
+@app.post("/api/focus")
+@login_required
+@api_endpoint
+def record_focus(body):
+    activity = str(body.get("activity", "Focus")).strip()[:60]
+    duration = body.get("duration_minutes")
+    if not isinstance(duration, int) or not 1 <= duration <= 180:
+        return jsonify(error="Focus duration must be between 1 and 180 minutes."), 400
+    get_db().execute(
+        "INSERT INTO focus_sessions (user_id, activity, duration_minutes, completed_on) VALUES (?, ?, ?, ?)",
+        (int(current_user.id), activity or "Focus", duration, date.today().isoformat()),
+    )
+    get_db().commit()
+    return jsonify(ok=True)
+
+
+@app.post("/api/assistant")
+@login_required
+@api_endpoint
+def assistant(body):
+    message = str(body.get("message", "")).strip()
+    if not message or len(message) > 1000:
+        return jsonify(error="Write a message up to 1,000 characters."), 400
+    return jsonify(reply=generate_reply(message))
+
+
+with app.app_context():
+    init_db()
+
+
+def promote_admin(email):
+    normalized_email = email.strip().lower()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", normalized_email):
+        raise ValueError("Provide a valid account email address.")
+    db = get_db()
+    user = db.execute(
+        "SELECT id, name, email FROM users WHERE email = ?", (normalized_email,)
+    ).fetchone()
+    if not user:
+        raise ValueError("No account exists for that email. Register the account first.")
+    db.execute("UPDATE users SET role = 'admin' WHERE id = ?", (user["id"],))
+    db.commit()
+    return user["email"]
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "promote-admin":
+        try:
+            promoted_email = promote_admin(sys.argv[2])
+        except ValueError as error:
+            raise SystemExit(str(error)) from error
+        print(f"Administrator access granted to {promoted_email}.")
+    elif len(sys.argv) == 1:
+        debug_enabled = os.environ.get("FLASK_DEBUG", "").lower() in {"1", "true", "yes", "on"}
+        app.run(debug=debug_enabled)
+    else:
+        raise SystemExit("Usage: python app.py [promote-admin EMAIL]")

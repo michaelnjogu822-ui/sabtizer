@@ -4,598 +4,1698 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NyutuCo- Business Solutions</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap"
-        rel="stylesheet" />
+    <meta name="theme-color" content="#f8f8f4" />
+    <title>Overview | sabtizer</title>
     <style>
+        :root {
+            color-scheme: light;
+            --ink: #1d3831;
+            --muted: #829089;
+            --green: #216b54;
+            --green-dark: #1d4035;
+            --green-soft: #e6eee2;
+            --page: #f8f8f4;
+            --line: #e9ece6;
+            --white: #fff;
+            --lavender: #efebf6;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
+        [hidden] {
+            display: none !important;
+        }
+
         body {
-            font-family: 'Lato', sans-serif;
-            color: #2b9c4d;
-            background: #9c0f0f;
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--ink);
+            background: var(--page);
+            font-size: 13px;
         }
 
-        /* NAV */
-        nav {
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .app {
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 3;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 8%;
+            width: 232px;
+            flex-direction: column;
+            padding: 27px 17px 18px;
             background: #fff;
-            border-bottom: 1px solid #eee;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            border-right: 1px solid var(--line);
+            overflow-y: auto;
         }
 
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            color: #975971;
+        .brand {
+            margin: 0 0 4px 2px;
+            color: var(--green-dark);
+            font-size: 21px;
+            font-weight: 750;
+            letter-spacing: -1.1px;
         }
 
-        .logo span {
-            color: #401ae8;
-        }
-
-        nav ul {
-            list-style: crimson;
-            display: flex;
-            gap: 32px;
-        }
-
-        nav ul a {
-            text-decoration: crimson;
-            color: #ca2525;
-            font-size: 0.9rem;
+        .brand-note {
+            margin: 0 0 34px 3px;
+            color: var(--muted);
+            font-size: 8px;
             font-weight: 700;
-            transition: color 0.2s;
-        }
-
-        nav ul a:hover {
-            color: #9c1010;
-        }
-
-        .nav-btn {
-            background: #e8631a;
-            color: #fff !important;
-            padding: 9px 22px;
-            border-radius: 4px;
-        }
-
-        /* HERO */
-        .hero {
-            background: linear-gradient(135deg, #0e0eaf 0%, #05a763 60%, #0f3460 100%);
-            color: #ad0606;
-            padding: 100px 8%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 40px;
-            min-height: 85vh;
-        }
-
-        .hero-text {
-            max-width: 580px;
-        }
-
-        .hero-text h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2.4rem, 5vw, 3.8rem);
-            line-height: 1.2;
-            margin-bottom: 20px;
-        }
-
-        .hero-text h1 span {
-            color: #05ad5f;
-        }
-
-        .hero-text p {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: #aab8d4;
-            margin-bottom: 36px;
-        }
-
-        .hero-btns {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .btn-orange {
-            background: #992860;
-            color: #0709a0;
-            padding: 13px 28px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: opacity 0.2s;
-        }
-
-        .btn-orange:hover {
-            opacity: 0.85;
-        }
-
-        .btn-outline-white {
-            border: 2px solid rgba(33, 17, 175, 0.3);
-            color: #ce9c13;
-            padding: 13px 28px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: 900;
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-
-        .btn-outline-white:hover {
-            border-color: #26d343;
-        }
-
-        .hero-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .stat-box {
-            background: rgb(21, 221, 47);
-            border: 1px solid rgba(32, 18, 156, 0.1);
-            border-radius: 10px;
-            padding: 24px 32px;
-            text-align: center;
-        }
-
-        .stat-box .num {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.2rem;
-            color: #131c92;
-        }
-
-        .stat-box .lbl {
-            font-size: 0.82rem;
-            color: #a3122a;
-            margin-top: 4px;
-        }
-
-        /* SECTIONS */
-        section {
-            padding: 80px 8%;
-        }
-
-        .section-label {
-            font-size: 0.75rem;
-            letter-spacing: 3px;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            color: #2f10a1;
+        }
+
+        .nav-label {
+            margin: 0 0 10px 8px;
+            color: #a0aaa3;
+            font-size: 8px;
             font-weight: 700;
-            margin-bottom: 12px;
+            letter-spacing: .8px;
+            text-transform: uppercase;
         }
 
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(1.8rem, 3vw, 2.5rem);
-            margin-bottom: 14px;
-            color: #17a04c;
-        }
-
-        .section-sub {
-            color: #060e83;
-            font-size: 1rem;
-            line-height: 1.7;
-            max-width: 540px;
-            margin-bottom: 50px;
-        }
-
-        /* SERVICES */
-        #services {
-            background: #df6909;
-        }
-
-        .services-grid {
+        .nav-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 24px;
-        }
-
-        .service-card {
-            background: #ad4646;
-            border: 1px solid #181616;
-            border-radius: 10px;
-            padding: 32px 28px;
-            transition: box-shadow 0.3s, transform 0.2s;
-        }
-
-        .service-card:hover {
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            transform: translateY(-4px);
-        }
-
-        .svc-icon {
-            font-size: 2rem;
-            margin-bottom: 18px;
-        }
-
-        .svc-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.15rem;
-            margin-bottom: 10px;
-            color: #1a1a2e;
-        }
-
-        .svc-desc {
-            color: #777;
-            font-size: 0.88rem;
-            line-height: 1.7;
-        }
-
-        /* ABOUT */
-        .about-wrap {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 70px;
-            align-items: center;
-        }
-
-        .about-img {
-            background: linear-gradient(135deg, #1a1a2e, #0f3460);
-            border-radius: 12px;
-            height: 380px;
-            display: flex;
-            align-items: right;
-            justify-content: right;
-            font-size: 5rem;
-        }
-
-        .about-list {
+            gap: 4px;
+            margin: 0;
+            padding: 0;
             list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-top: 28px;
         }
 
-        .about-list li {
+        .nav-link {
             display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            font-size: 0.92rem;
-            color: #444;
+            min-height: 35px;
+            align-items: center;
+            gap: 10px;
+            padding: 0 10px;
+            border-radius: 6px;
+            color: #6d7a73;
+            font-size: 11px;
+            text-decoration: none;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--green);
+            background: #e6efe7;
+        }
+
+        .nav-link.active {
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            width: 15px;
+            height: 15px;
+            flex: 0 0 15px;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 1.6;
+            fill: none;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .encouragement {
+            margin: 0 0 18px;
+            padding: 13px 12px;
+            border-radius: 7px;
+            background: #f6f5eb;
+        }
+
+        .encouragement strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+
+        .encouragement p {
+            margin: 0;
+            color: #7e887f;
+            font-size: 9px;
             line-height: 1.6;
         }
 
-        .about-list li::before {
-            content: '✓';
-            color: #e8631a;
-            font-weight: 700;
-            margin-top: 2px;
-            flex-shrink: 0;
-        }
-
-        /* CONTACT */
-        #contact {
-            background: #f8f8f8;
-        }
-
-        .contact-wrap {
+        .bottom-links {
             display: grid;
-            grid-template-columns: 1fr 1.3fr;
-            gap: 60px;
-            align-items: start;
+            gap: 2px;
+            margin-bottom: 17px;
         }
 
-        .contact-info h3 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-        }
-
-        .contact-info p {
-            color: #666;
-            font-size: 0.92rem;
-            line-height: 1.8;
-            margin-bottom: 28px;
-        }
-
-        .contact-detail {
+        .profile {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 14px;
-            font-size: 0.9rem;
-            color: #444;
+            gap: 9px;
+            padding-top: 15px;
+            border-top: 1px solid var(--line);
         }
 
-        .contact-form {
-            background: #fff;
-            border: 1px solid #e8e8e8;
-            border-radius: 12px;
-            padding: 36px;
-        }
-
-        .form-row {
+        .avatar {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            width: 29px;
+            height: 29px;
+            place-items: center;
+            border-radius: 50%;
+            color: #456b55;
+            background: #e5ecdf;
+            font-size: 10px;
+            font-weight: 700;
         }
 
-        .form-group {
+        .profile-name {
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .profile-caption {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 8px;
+        }
+
+        .main {
+            min-height: 100vh;
+            margin-left: 232px;
+        }
+
+        .topbar {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
+            height: 57px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 35px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, .7);
         }
 
-        label {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #555;
-            letter-spacing: 0.5px;
+        .breadcrumbs {
+            color: #89938d;
+            font-size: 10px;
         }
 
-        input,
-        textarea,
-        select {
-            padding: 11px 14px;
-            border: 1px solid #ddd;
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 19px;
+            color: #858f89;
+            font-size: 9px;
+        }
+
+        .icon-button {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            place-items: center;
+            border: 0;
             border-radius: 6px;
-            font-family: 'Lato', sans-serif;
-            font-size: 0.9rem;
-            color: #1a1a2e;
-            outline: none;
-            transition: border-color 0.2s;
-            width: 100%;
+            color: #6f7d75;
+            background: transparent;
         }
 
-        input:focus,
-        textarea:focus,
-        select:focus {
-            border-color: #e8631a;
+        .icon-button:hover {
+            background: #eff2ec;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
+        .icon-button .nav-icon {
+            width: 14px;
+            height: 14px;
         }
 
-        .btn-submit {
-            width: 100%;
-            background: #e8631a;
+        .content {
+            width: min(1120px, 100%);
+            margin: 0 auto;
+            padding: 36px 36px 50px;
+        }
+
+        .welcome {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 23px;
+        }
+
+        .eyebrow {
+            margin: 0 0 7px;
+            color: #8d9991;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .7px;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: #183c32;
+            font-size: clamp(20px, 2.2vw, 26px);
+            font-weight: 600;
+            letter-spacing: -.8px;
+        }
+
+        .welcome-copy {
+            margin: 0;
+            color: #7e8981;
+            font-size: 10px;
+        }
+
+        .primary-button {
+            display: inline-flex;
+            min-height: 34px;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 5px;
             color: #fff;
-            border: none;
-            padding: 13px;
-            border-radius: 6px;
-            font-family: 'Lato', sans-serif;
+            background: var(--green);
+            font-size: 9px;
             font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            transition: background .15s, transform .15s;
         }
 
-        .btn-submit:hover {
-            opacity: 0.85;
+        .primary-button:hover {
+            transform: translateY(-1px);
+            background: #185b46;
         }
 
-        /* FOOTER */
-        footer {
-            background: #1a1a2e;
-            color: #aab8d4;
-            padding: 30px 8%;
+        .plus {
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 19px;
+        }
+
+        .stat-card {
+            min-height: 70px;
+            padding: 13px 15px;
+            border: 1px solid #f0f1ec;
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .stat-card.highlight {
+            border-color: transparent;
+            background: #e8efdf;
+        }
+
+        .stat-label {
+            margin-bottom: 5px;
+            color: #849088;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .25px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            color: #23453a;
+            font-size: 21px;
+            font-weight: 650;
+            letter-spacing: -.7px;
+        }
+
+        .stat-hint {
+            margin-top: 3px;
+            color: #8c978f;
+            font-size: 8px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.72fr) minmax(240px, .92fr);
+            align-items: start;
+            gap: 13px;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0 0 11px;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: -.2px;
+        }
+
+        .subtle-button {
+            padding: 5px 0 5px 8px;
+            border: 0;
+            color: #7b8981;
+            background: transparent;
+            font-size: 8px;
+        }
+
+        .habit-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .habit-card {
+            padding: 12px 13px 11px;
+            border: 1px solid #edf0ea;
+            border-radius: 7px;
+            background: var(--white);
+        }
+
+        .habit-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .habit-category {
+            margin-bottom: 4px;
+            color: #939d96;
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: .45px;
+            text-transform: uppercase;
+        }
+
+        .habit-name {
+            margin: 0;
+            color: #28443a;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .habit-note {
+            margin: 3px 0 0;
+            color: #89948d;
+            font-size: 8px;
+        }
+
+        .habit-count {
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .habit-count strong {
+            display: block;
+            color: #2f4d40;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .habit-count span {
+            color: #929b95;
+            font-size: 7px;
+        }
+
+        .habit-bottom {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .progress-wrap {
+            flex: 1;
+        }
+
+        .progress-meta {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 5px;
+            color: #929c95;
+            font-size: 7px;
+        }
+
+        .progress-track {
+            overflow: hidden;
+            height: 3px;
+            border-radius: 5px;
+            background: #edf0eb;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: #28775d;
+        }
+
+        .check-button {
+            display: inline-flex;
+            min-width: 70px;
+            min-height: 27px;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 14px;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 8px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #537464;
+            background: #edf3ec;
+            font-size: 8px;
+            font-weight: 650;
         }
 
-        footer .logo {
+        .check-button:hover {
+            border-color: #b8cdbb;
+        }
+
+        .check-button.done {
             color: #fff;
-            font-size: 1.2rem;
+            background: #216b54;
         }
 
-        footer p {
-            font-size: 0.82rem;
+        .right-column {
+            display: grid;
+            gap: 10px;
         }
 
-        footer a {
-            color: #aab8d4;
-            text-decoration: none;
-            margin-left: 20px;
-            font-size: 0.82rem;
+        .panel {
+            padding: 13px;
+            border: 1px solid #edf0ea;
+            border-radius: 7px;
+            background: #fff;
         }
 
-        footer a:hover {
-            color: #e8631a;
+        .panel-title {
+            margin: 0 0 4px;
+            font-size: 11px;
+            font-weight: 700;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .hero {
-                flex-direction: column;
-                padding: 80px 6%;
+        .panel-caption {
+            margin: 0;
+            color: #929b95;
+            font-size: 8px;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 11px 0 8px;
+        }
+
+        .calendar-month {
+            color: #40594d;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .calendar-arrows {
+            display: flex;
+            gap: 3px;
+        }
+
+        .calendar-arrows button {
+            width: 20px;
+            height: 20px;
+            border: 0;
+            border-radius: 4px;
+            color: #74847a;
+            background: #f5f7f2;
+            font-size: 12px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px 3px;
+            text-align: center;
+        }
+
+        .weekday {
+            padding-bottom: 3px;
+            color: #a0aaa2;
+            font-size: 7px;
+        }
+
+        .day {
+            display: grid;
+            width: 100%;
+            aspect-ratio: 1;
+            place-items: center;
+            border-radius: 4px;
+            color: #718078;
+            font-size: 8px;
+        }
+
+        .day.checked {
+            color: #35664e;
+            background: #e5eee1;
+        }
+
+        .day.today {
+            color: #fff;
+            background: #266d54;
+        }
+
+        .calendar-legend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 9px;
+            color: #929d95;
+            font-size: 7px;
+        }
+
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 2px;
+            background: #dce9d9;
+        }
+
+        .streak-panel {
+            padding: 14px;
+            color: #fff;
+            border: 0;
+            background: var(--green-dark);
+        }
+
+        .streak-panel .panel-title {
+            color: #fff;
+        }
+
+        .streak-panel .panel-caption {
+            color: #c0d0c8;
+        }
+
+        .streak-value {
+            margin: 13px 0 2px;
+            font-size: 29px;
+            font-weight: 500;
+            letter-spacing: -1px;
+        }
+
+        .streak-value span {
+            font-size: 10px;
+            letter-spacing: 0;
+        }
+
+        .streak-footer {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, .16);
+            color: #c2d0c9;
+            font-size: 7px;
+        }
+
+        .reflection {
+            border-color: transparent;
+            background: var(--lavender);
+        }
+
+        .reflection .panel-title {
+            color: #493c60;
+        }
+
+        .reflection p {
+            margin: 7px 0 0;
+            color: #766b84;
+            font-size: 8px;
+            line-height: 1.6;
+        }
+
+        .reflection strong {
+            color: #4a3e60;
+        }
+
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 5;
+            padding: 11px 15px;
+            border-radius: 6px;
+            color: #fff;
+            background: #244b3d;
+            box-shadow: 0 8px 26px #17372b25;
+            font-size: 11px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity .2s, transform .2s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .auth-screen {
+            display: grid;
+            min-height: 100vh;
+            place-items: center;
+            padding: 24px;
+            background: var(--green-dark);
+        }
+
+        .auth-card {
+            width: min(390px, 100%);
+            padding: 28px;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 18px 60px #102e2455;
+        }
+
+        .auth-card h1 {
+            margin: 0 0 7px;
+            font-size: 22px;
+        }
+
+        .auth-card > p {
+            margin: 0 0 21px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .auth-error {
+            margin: 12px 0;
+            color: #a53434;
+            font-size: 10px;
+        }
+
+        .auth-switch {
+            margin: 17px 0 0 !important;
+            text-align: center;
+        }
+
+        .auth-switch button {
+            padding: 0;
+            border: 0;
+            color: var(--green);
+            background: transparent;
+            font-weight: 700;
+        }
+
+        .admin-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0 20px;
+        }
+
+        .admin-stat {
+            padding: 13px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #fff;
+        }
+
+        .admin-stat span {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--muted);
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+
+        .admin-stat strong {
+            font-size: 19px;
+        }
+
+        .admin-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #fff;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            text-align: left;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+
+        .admin-table th {
+            color: #77857c;
+            background: #fafbf8;
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .admin-table select {
+            width: auto;
+            padding: 5px 7px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            color: var(--ink);
+            background: #fff;
+        }
+
+        .admin-delete {
+            border: 0;
+            color: #a54848;
+            background: transparent;
+            font-size: 9px;
+        }
+
+        .empty-habits {
+            padding: 25px 16px;
+            border: 1px dashed #dfe6dc;
+            border-radius: 7px;
+            color: #78877d;
+            background: #fff;
+            text-align: center;
+        }
+
+        dialog {
+            width: min(420px, calc(100vw - 32px));
+            padding: 0;
+            border: 1px solid #e8ece5;
+            border-radius: 10px;
+            color: var(--ink);
+            background: #fff;
+            box-shadow: 0 20px 70px #1d383133;
+        }
+
+        dialog::backdrop {
+            background: #19382d66;
+            backdrop-filter: blur(2px);
+        }
+
+        .dialog-content {
+            padding: 22px;
+        }
+
+        .dialog-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .dialog-heading h2 {
+            margin: 0 0 4px;
+            font-size: 17px;
+        }
+
+        .dialog-heading p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .close-button {
+            width: 27px;
+            height: 27px;
+            border: 0;
+            border-radius: 5px;
+            color: #75837b;
+            background: #f4f6f1;
+            font-size: 16px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 13px;
+        }
+
+        .field label {
+            color: #566a5f;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            min-height: 37px;
+            padding: 0 10px;
+            border: 1px solid #dfe5dc;
+            border-radius: 5px;
+            color: #30483c;
+            background: #fff;
+            outline: none;
+            font-size: 10px;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: #5d9277;
+            box-shadow: 0 0 0 3px #dcebe1;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 19px;
+        }
+
+        .secondary-button {
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid #e2e8e0;
+            border-radius: 5px;
+            color: #65756b;
+            background: #fff;
+            font-size: 9px;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 190px;
             }
 
-            .hero-stats {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
+            .main {
+                margin-left: 190px;
             }
 
-            .about-wrap,
-            .contact-wrap {
-                grid-template-columns: 1fr;
+            .topbar {
+                padding: 0 22px;
             }
 
-            .form-row {
-                grid-template-columns: 1fr;
+            .content {
+                padding: 29px 22px 40px;
             }
 
-            nav ul {
+            .dashboard-grid {
+                grid-template-columns: minmax(0, 1.4fr) minmax(210px, .9fr);
+            }
+        }
+
+        @media (max-width: 680px) {
+            .sidebar {
+                position: sticky;
+                inset: 0 0 auto;
+                width: 100%;
+                height: auto;
+                padding: 12px 14px 9px;
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .brand-row {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .brand {
+                margin: 0;
+                font-size: 18px;
+            }
+
+            .brand-note {
+                margin: 0;
+            }
+
+            .nav-label,
+            .sidebar-bottom {
                 display: none;
+            }
+
+            .nav-list {
+                display: flex;
+                gap: 4px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+
+            .nav-list::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-link {
+                min-height: 31px;
+                flex: 0 0 auto;
+                gap: 6px;
+                padding: 0 8px;
+                font-size: 9px;
+            }
+
+            .nav-icon {
+                width: 13px;
+                height: 13px;
+                flex-basis: 13px;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .topbar {
+                height: 43px;
+                padding: 0 16px;
+            }
+
+            .topbar-right {
+                gap: 9px;
+                font-size: 8px;
+            }
+
+            .content {
+                padding: 25px 15px 34px;
+            }
+
+            .welcome {
+                align-items: flex-start;
+            }
+
+            .welcome .primary-button {
+                min-height: 31px;
+                padding: 0 9px;
+                white-space: nowrap;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .right-column {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-items: start;
+            }
+
+            .calendar-panel {
+                grid-row: span 2;
+            }
+        }
+
+        @media (max-width: 430px) {
+            .stats {
+                gap: 6px;
+            }
+
+            .stat-card {
+                min-height: 65px;
+                padding: 10px 9px;
+            }
+
+            .stat-value {
+                font-size: 18px;
+            }
+
+            .stat-label {
+                font-size: 7px;
+            }
+
+            .right-column {
+                grid-template-columns: 1fr;
+            }
+
+            .calendar-panel {
+                grid-row: auto;
+            }
+
+            .admin-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
     </style>
 </head>
 
 <body>
-
-    <!-- NAV -->
-    <nav>
-        <div class="logo">Nyutu<span>Co</span></div>
-        <ul>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="#contact" class="nav-btn">Get a Quote</a></li>
-        </ul>
-    </nav>
-
-    <!-- HERO -->
-    <section class="hero">
-        <div class="hero-text">
-            <h1>Smart Solutions<br>For <span>Growing</span><br>Businesses</h1>
-            <p>We help companies streamline operations, grow their brand, and reach more customers with practical,
-                results-driven business solutions.</p>
-            <div class="hero-btns">
-                <a href="#services" class="btn-orange">Our Services</a>
-                <a href="#contact" class="btn-outline-white">Talk to Us</a>
+    <section class="auth-screen" id="authScreen" hidden>
+        <form class="auth-card" id="authForm">
+            <p class="eyebrow" id="authEyebrow">YOUR SPACE, YOUR PACE</p>
+            <h1 id="authTitle">Welcome back.</h1>
+            <p id="authSubtitle">Sign in to continue to your habits.</p>
+            <div class="field" id="authNameField" hidden>
+                <label for="authName">Name</label>
+                <input id="authName" name="name" maxlength="60" autocomplete="name">
             </div>
-        </div>
-        <div class="hero-stats">
-            <div class="stat-box">
-                <div class="num">350+</div>
-                <div class="lbl">Happy Clients</div>
+            <div class="field">
+                <label for="authEmail">Email address</label>
+                <input id="authEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
             </div>
-            <div class="stat-box">
-                <div class="num">12yr</div>
-                <div class="lbl">In Business</div>
+            <div class="field">
+                <label for="authPassword">Password</label>
+                <input id="authPassword" name="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required>
             </div>
-            <div class="stat-box">
-                <div class="num">98%</div>
-                <div class="lbl">Satisfaction Rate</div>
-            </div>
-        </div>
+            <p class="auth-error" id="authError" role="alert" hidden></p>
+            <button class="primary-button" type="submit" id="authSubmit" style="width:100%">Sign in</button>
+            <p class="auth-switch"><span id="authSwitchText">New here?</span> <button type="button" id="authSwitch">Create an account</button></p>
+        </form>
     </section>
-
-    <!-- SERVICES -->
-    <section id="services">
-        <div class="section-label">What We Offer</div>
-        <h2 class="section-title">Our Core Services</h2>
-        <p class="section-sub">Everything your business needs to operate efficiently and grow confidently.</p>
-        <div class="services-grid">
-            <div class="service-card">
-                <div class="svc-icon">📈</div>
-                <div class="svc-title">Business Consulting</div>
-                <p class="svc-desc">Strategic advice to help you make smarter decisions, cut costs, and scale your
-                    operations effectively.</p>
+    <div class="app" id="app" hidden>
+        <aside class="sidebar" aria-label="Main navigation">
+            <div class="brand-row">
+                <div class="brand">sab<span style="font-weight: 450;">tizer</span></div>
+                <p class="brand-note">A LITTLE BETTER, DAILY</p>
             </div>
-            <div class="service-card">
-                <div class="svc-icon">💻</div>
-                <div class="svc-title">Digital Marketing</div>
-                <p class="svc-desc">SEO, social media, and paid campaigns that bring real customers to your business —
-                    not just clicks.</p>
-            </div>
-            <div class="service-card">
-                <div class="svc-icon">🎨</div>
-                <div class="svc-title">Brand Design</div>
-                <p class="svc-desc">Logo, identity, and visual assets that make your brand stand out and build trust
-                    with your audience.</p>
-            </div>
-            <div class="service-card">
-                <div class="svc-icon">🌐</div>
-                <div class="svc-title">Web Development</div>
-                <p class="svc-desc">Fast, modern websites and web apps built to convert visitors into loyal customers.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about">
-        <div class="about-wrap">
-            <div class="about-img">🏢</div>
-            <div>
-                <div class="section-label">Who We Are</div>
-                <h2 class="section-title">A Team That Gets Results</h2>
-                <p class="section-sub">NyutuCo has been helping businesses of all sizes grow since 2012. We combine
-                    strategy, creativity, and technology to deliver measurable results.</p>
-                <ul class="about-list">
-                    <li>Over 350 successful client partnerships across multiple industries</li>
-                    <li>A team of 40+ specialists in strategy, design, and technology</li>
-                    <li>Transparent pricing — no hidden fees, ever</li>
-                    <li>Dedicated account manager for every client</li>
-                    <li>Proven track record with 98% client satisfaction rate</li>
+            <p class="nav-label">Workspace</p>
+            <nav aria-label="Workspace">
+                <ul class="nav-list">
+                    <li><a class="nav-link active" href="#overview" aria-current="page">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                        Overview
+                    </a></li>
+                    <li><a class="nav-link" href="#habits">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10M7 8h10M7 12h6"/><path d="M5 3h14a1 1 0 0 1 1 1v16l-4-2-4 2-4-2-4 2V4a1 1 0 0 1 1-1Z"/></svg>
+                        My habits
+                    </a></li>
+                    <li><a class="nav-link" href="#insights">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h17"/><path d="m7 15 4-4 3 2 6-7"/></svg>
+                        Insights
+                    </a></li>
+                    <li id="adminNavItem" hidden><a class="nav-link" href="#admin" id="adminNavLink">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 6v5c0 4.5-2.9 8-7 10-4.1-2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+                        Admin console
+                    </a></li>
                 </ul>
-            </div>
-        </div>
-    </section>
+            </nav>
 
-    <!-- CONTACT -->
-    <section id="contact">
-        <div class="section-label">Reach Out</div>
-        <h2 class="section-title">Let's Work Together</h2>
-        <div class="contact-wrap">
-            <div class="contact-info">
-                <h3>We'd love to hear from you.</h3>
-                <p>Whether you have a question, need a quote, or just want to explore what's possible — our team is
-                    ready to help.</p>
-                <div class="contact-detail"><span>📧</span><span>hello@nyutuco.com</span></div>
-                <div class="contact-detail"><span>📞</span><span>+254 115724252 </span></div>
-                <div class="contact-detail"><span>📍</span><span>23 Nairobi,Kenya NY</span></div>
-                <div class="contact-detail"><span>🕐</span><span>Mon – Fri, 9AM – 5PM EST</span></div>
-            </div>
-            <div class="contact-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>First Name</label>
-                        <input type="text" placeholder="John" />
+            <div class="sidebar-bottom">
+                <div class="encouragement">
+                    <strong>Progress, not perfection.</strong>
+                    <p>One small effort today is enough to keep everything moving.</p>
+                </div>
+                <div class="bottom-links">
+                    <a class="nav-link" href="#settings">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3H3.7a1.8 1.8 0 1 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 1 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/></svg>
+                        Settings
+                    </a>
+                    <a class="nav-link" href="#help">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.7c-1.1 1-1.9 1.4-1.9 3"/><path d="M12 17.5h.01"/></svg>
+                        Help &amp; support
+                    </a>
+                </div>
+                <div class="profile">
+                    <div class="avatar" aria-hidden="true">JM</div>
+                    <div>
+                        <div class="profile-name" id="profileName">Your account</div>
+                        <div class="profile-caption" id="profileCaption">Personal account</div>
                     </div>
-                    <div class="form-group">
-                        <label>Last Name</label>
-                        <input type="text" placeholder="Doe" />
-                    </div>
+                    <button class="icon-button" type="button" id="logoutButton" aria-label="Sign out" title="Sign out">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" placeholder="john@example.com" />
-                </div>
-                <div class="form-group">
-                    <label>Service</label>
-                    <select>
-                        <option value="">Select a service...</option>
-                        <option>Business Consulting</option>
-                        <option>Digital Marketing</option>
-                        <option>Brand Design</option>
-                        <option>Web Development</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Message</label>
-                    <textarea placeholder="Tell us about your project..."></textarea>
-                </div>
-                <button class="btn-submit">Send Message</button>
             </div>
-        </div>
-    </section>
+        </aside>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="logo">Nyutu<span style="color:#e8631a">Co</span></div>
-        <p>© 2026 NyutuCo. All rights reserved.</p>
-        <div>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Careers</a>
-        </div>
-    </footer>
+        <main class="main" id="overview">
+            <header class="topbar">
+                <div class="breadcrumbs">Workspace&nbsp; / &nbsp;Overview</div>
+                <div class="topbar-right">
+                    <span id="todayDate"></span>
+                    <button class="icon-button" type="button" aria-label="Notifications" id="notificationButton">
+                        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                    </button>
+                </div>
+            </header>
 
+            <div class="content">
+                <section id="dashboardPanel">
+                <section class="welcome" aria-labelledby="welcomeTitle">
+                    <div>
+                        <p class="eyebrow">Your everyday reset</p>
+                        <h1 id="welcomeTitle">You're making room for better.</h1>
+                        <p class="welcome-copy" id="welcomeCopy">Every day you show up is a little win.</p>
+                    </div>
+                    <button class="primary-button" type="button" id="openHabitDialog"><span class="plus">+</span> Add a habit</button>
+                </section>
+
+                <section class="stats" aria-label="Your habit summary">
+                    <article class="stat-card">
+                        <div class="stat-label">Active habits</div>
+                        <div class="stat-value" id="activeCount">0</div>
+                        <div class="stat-hint">Small changes, big possibilities.</div>
+                    </article>
+                    <article class="stat-card highlight">
+                        <div class="stat-label">Longest current streak</div>
+                        <div class="stat-value"><span id="streakCount">0</span> days</div>
+                        <div class="stat-hint">Your streak keeps growing.</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-label">Today's check-ins</div>
+                        <div class="stat-value"><span id="checkedCount">0</span> of <span id="totalCount">0</span></div>
+                        <div class="stat-hint">One more moment for yourself.</div>
+                    </article>
+                </section>
+
+                <div class="dashboard-grid">
+                    <section id="habits" aria-labelledby="habitsTitle">
+                        <div class="section-heading">
+                            <h2 id="habitsTitle">Your habits</h2>
+                            <button class="subtle-button" type="button" id="viewAllButton">All habits&nbsp;⌄</button>
+                        </div>
+                        <div class="habit-list" id="habitList"></div>
+                    </section>
+
+                    <aside class="right-column" id="insights" aria-label="Habit insights">
+                        <section class="panel calendar-panel">
+                            <div class="section-heading">
+                                <div>
+                                    <h2 class="panel-title">Your consistency</h2>
+                                    <p class="panel-caption">Your daily progress</p>
+                                </div>
+                                <button class="icon-button" type="button" aria-label="More calendar options">···</button>
+                            </div>
+                            <div class="calendar-header">
+                                <span class="calendar-month" id="calendarMonthLabel"></span>
+                                <div class="calendar-arrows" aria-label="Calendar month controls">
+                                    <button type="button" aria-label="Previous month" id="previousMonth">‹</button>
+                                    <button type="button" aria-label="Next month" id="nextMonth">›</button>
+                                </div>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid" aria-label="Habit check-ins"></div>
+                            <div class="calendar-legend"><span class="legend-dot"></span> Checked in</div>
+                        </section>
+
+                        <section class="panel streak-panel">
+                            <h2 class="panel-title">Your current streak</h2>
+                            <p class="panel-caption">Across your habits</p>
+                            <div class="streak-value"><span id="currentStreak">0</span> <span>day streak</span></div>
+                            <p class="panel-caption">Your current streak</p>
+                            <div class="streak-footer"><span>Longest streak</span><span id="longestStreak">0 days</span></div>
+                        </section>
+
+                        <section class="panel reflection">
+                            <h2 class="panel-title">Start small. Stay kind.</h2>
+                            <p>You don't need a perfect streak to make progress. If you slip, let go of what happened and begin again.</p>
+                        </section>
+                    </aside>
+                </div>
+                </section>
+                <section id="adminPanel" hidden aria-labelledby="adminTitle">
+                    <p class="eyebrow">Workspace controls</p>
+                    <h1 id="adminTitle">Admin console</h1>
+                    <p class="welcome-copy">Manage accounts and review usage across the workspace.</p>
+                    <div class="admin-summary" id="adminSummary"></div>
+                    <div class="section-heading"><h2>Accounts</h2></div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Habits</th><th>Check-ins</th><th>Manage</th></tr></thead>
+                            <tbody id="adminUsers"></tbody>
+                        </table>
+                    </div>
+                    <div class="section-heading" style="margin-top:24px"><h2>All habits</h2></div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead><tr><th>Habit</th><th>Owner</th><th>Category</th><th>Schedule</th><th>Manage</th></tr></thead>
+                            <tbody id="adminHabits"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <dialog id="habitDialog" aria-labelledby="dialogTitle">
+        <form class="dialog-content" id="habitForm" method="dialog">
+            <div class="dialog-heading">
+                <div>
+                    <h2 id="dialogTitle">Create a new habit</h2>
+                    <p>A small change starts here.</p>
+                </div>
+                <button class="close-button" type="button" id="closeHabitDialog" aria-label="Close dialog">×</button>
+            </div>
+            <div class="field">
+                <label for="habitNameInput">Habit name</label>
+                <input id="habitNameInput" name="habitName" type="text" placeholder="e.g. Take a short walk" required maxlength="48" />
+            </div>
+            <div class="field">
+                <label for="habitCategoryInput">Category</label>
+                <select id="habitCategoryInput" name="category">
+                    <option>Health</option>
+                    <option>Fitness</option>
+                    <option>Education</option>
+                    <option>Productivity</option>
+                    <option>Personal Development</option>
+                    <option>Finance</option>
+                    <option>Spiritual Growth</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="habitFrequencyInput">Schedule</label>
+                <select id="habitFrequencyInput" name="frequency">
+                    <option value="daily">Every day</option>
+                    <option value="weekly">Once a week</option>
+                </select>
+            </div>
+            <div class="dialog-actions">
+                <button class="secondary-button" type="button" id="cancelHabitDialog">Cancel</button>
+                <button class="primary-button" type="submit">Create habit&nbsp; →</button>
+            </div>
+        </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        const habitDialog = document.getElementById("habitDialog");
+        const habitForm = document.getElementById("habitForm");
+        const habitList = document.getElementById("habitList");
+        const toast = document.getElementById("toast");
+        const authForm = document.getElementById("authForm");
+        const state = { csrf: "", user: null, register: false, adminHabitOwnerId: null, calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1) };
+        let toastTimeout;
+
+        function localDateKey(value = new Date()) {
+            return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add("show");
+            window.clearTimeout(toastTimeout);
+            toastTimeout = window.setTimeout(() => toast.classList.remove("show"), 2600);
+        }
+
+        async function api(url, options = {}) {
+            const method = (options.method || "GET").toUpperCase();
+            const headers = { Accept: "application/json", ...(options.headers || {}) };
+            const fetchOptions = { ...options, method, headers, credentials: "same-origin" };
+            if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+                headers["X-CSRF-Token"] = state.csrf;
+                if (options.body && typeof options.body !== "string") {
+                    headers["Content-Type"] = "application/json";
+                    fetchOptions.body = JSON.stringify(options.body);
+                }
+            }
+            const response = await fetch(url, fetchOptions);
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+            return data;
+        }
+
+        function setAuthMode(register) {
+            state.register = register;
+            document.getElementById("authNameField").hidden = !register;
+            document.getElementById("authName").required = register;
+            document.getElementById("authPassword").minLength = register ? 10 : 1;
+            document.getElementById("authPassword").autocomplete = register ? "new-password" : "current-password";
+            document.getElementById("authEyebrow").textContent = register ? "A SPACE OF YOUR OWN" : "YOUR SPACE, YOUR PACE";
+            document.getElementById("authTitle").textContent = register ? "Start with one small step." : "Welcome back.";
+            document.getElementById("authSubtitle").textContent = register ? "Create your private account and begin at your own pace." : "Sign in to continue to your habits.";
+            document.getElementById("authSubmit").textContent = register ? "Create my account" : "Sign in";
+            document.getElementById("authSwitchText").textContent = register ? "Already have an account?" : "New here?";
+            document.getElementById("authSwitch").textContent = register ? "Sign in" : "Create an account";
+            document.getElementById("authError").hidden = true;
+        }
+
+        function showAuth() {
+            document.getElementById("app").hidden = true;
+            document.getElementById("authScreen").hidden = false;
+        }
+
+        function showApp(user) {
+            state.user = user;
+            document.getElementById("authScreen").hidden = true;
+            document.getElementById("app").hidden = false;
+            document.getElementById("profileName").textContent = user.name;
+            document.getElementById("profileCaption").textContent = user.role === "admin" ? "Administrator" : "Personal account";
+            document.getElementById("adminNavItem").hidden = user.role !== "admin";
+            document.getElementById("todayDate").textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+            showDashboard();
+        }
+
+        function makeElement(tag, className, text) {
+            const element = document.createElement(tag);
+            if (className) element.className = className;
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+
+        function habitCard(habit) {
+            const card = makeElement("article", "habit-card");
+            const top = makeElement("div", "habit-top");
+            const description = makeElement("div");
+            description.append(
+                makeElement("div", "habit-category", `${habit.frequency === "weekly" ? "Weekly" : "Daily"} · ${habit.category}`),
+                makeElement("h3", "habit-name", habit.name),
+                makeElement("p", "habit-note", habit.description || "A small step, one day at a time.")
+            );
+            const count = makeElement("div", "habit-count");
+            count.append(makeElement("strong", "", habit.completed ? "1" : "0"), makeElement("span", "", "today"));
+            top.append(description, count);
+
+            const bottom = makeElement("div", "habit-bottom");
+            const progressWrap = makeElement("div", "progress-wrap");
+            const meta = makeElement("div", "progress-meta");
+            meta.append(
+                makeElement("span", "", habit.due ? "Today's check-in" : "Completed this week"),
+                makeElement("span", "", habit.completed ? "Done" : (habit.due ? "To do" : "Done"))
+            );
+            const track = makeElement("div", "progress-track");
+            const fill = makeElement("div", "progress-fill");
+            fill.style.width = habit.completed || !habit.due ? "100%" : "0%";
+            track.append(fill);
+            progressWrap.append(meta, track);
+
+            const check = makeElement("button", `check-button${habit.completed || !habit.due ? " done" : ""}`, habit.completed || !habit.due ? "✓ Checked in" : "✓ Check in");
+            check.type = "button";
+            check.dataset.habitId = String(habit.id);
+            check.dataset.due = String(habit.due);
+            check.disabled = !habit.due;
+            check.setAttribute("aria-pressed", String(habit.completed));
+            bottom.append(progressWrap, check);
+            card.append(top, bottom);
+            return card;
+        }
+
+        async function refreshDashboard() {
+            const date = localDateKey();
+            const data = await api(`/api/dashboard?date=${encodeURIComponent(date)}`);
+            document.getElementById("welcomeCopy").textContent = `Every day you show up is a little win, ${data.user.name}.`;
+            document.getElementById("activeCount").textContent = String(data.summary.active_habits);
+            document.getElementById("streakCount").textContent = String(data.summary.longest_streak);
+            document.getElementById("currentStreak").textContent = String(data.summary.current_streak);
+            document.getElementById("longestStreak").textContent = `${data.summary.longest_streak} days`;
+            document.getElementById("checkedCount").textContent = String(data.summary.completed);
+            document.getElementById("totalCount").textContent = String(data.summary.due);
+            habitList.replaceChildren();
+            if (!data.habits.length) {
+                habitList.append(makeElement("div", "empty-habits", "No habits yet. Add one small step to get started."));
+            } else {
+                data.habits.forEach(habit => habitList.append(habitCard(habit)));
+            }
+            await refreshCalendar();
+        }
+
+        async function refreshCalendar() {
+            const month = `${state.calendarMonth.getFullYear()}-${String(state.calendarMonth.getMonth() + 1).padStart(2, "0")}`;
+            document.getElementById("calendarMonthLabel").textContent = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(state.calendarMonth);
+            const data = await api(`/api/calendar?month=${encodeURIComponent(month)}`);
+            const grid = document.getElementById("calendarGrid");
+            grid.replaceChildren();
+            ["M", "T", "W", "T", "F", "S", "S"].forEach(day => grid.append(makeElement("span", "weekday", day)));
+            for (let blank = 0; blank < data.start_weekday; blank += 1) grid.append(makeElement("span", "day"));
+            const today = localDateKey();
+            for (let day = 1; day <= data.days; day += 1) {
+                const date = `${month}-${String(day).padStart(2, "0")}`;
+                const classes = ["day"];
+                if (data.completions[date]) classes.push("checked");
+                if (date === today) classes.push("today");
+                grid.append(makeElement("span", classes.join(" "), String(day)));
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById("dashboardPanel").hidden = false;
+            document.getElementById("adminPanel").hidden = true;
+            document.getElementById("adminNavLink").classList.remove("active");
+            refreshDashboard().catch(error => showToast(error.message));
+        }
+
+        async function showAdminPanel() {
+            document.getElementById("dashboardPanel").hidden = true;
+            document.getElementById("adminPanel").hidden = false;
+            document.getElementById("adminNavLink").classList.add("active");
+            try {
+                const [overview, users, habits] = await Promise.all([
+                    api("/api/admin/overview"),
+                    api("/api/admin/users"),
+                    api("/api/admin/habits")
+                ]);
+                const summary = document.getElementById("adminSummary");
+                summary.replaceChildren();
+                [["Accounts", overview.users], ["Administrators", overview.admins], ["Active habits", overview.habits], ["Check-ins", overview.completions]].forEach(([label, value]) => {
+                    const item = makeElement("div", "admin-stat");
+                    item.append(makeElement("span", "", label), makeElement("strong", "", String(value)));
+                    summary.append(item);
+                });
+                const rows = document.getElementById("adminUsers");
+                rows.replaceChildren();
+                users.forEach(user => {
+                    const row = makeElement("tr");
+                    row.dataset.userId = String(user.id);
+                    row.append(
+                        makeElement("td", "", user.name),
+                        makeElement("td", "", user.email)
+                    );
+                    const roleCell = makeElement("td");
+                    const role = document.createElement("select");
+                    role.setAttribute("aria-label", `Role for ${user.email}`);
+                    [["user", "User"], ["admin", "Admin"]].forEach(([value, label]) => {
+                        const option = document.createElement("option");
+                        option.value = value;
+                        option.textContent = label;
+                        role.append(option);
+                    });
+                    role.value = user.role;
+                    roleCell.append(role);
+                    row.append(roleCell, makeElement("td", "", String(user.active_habits)), makeElement("td", "", String(user.completions)));
+                    const manageCell = makeElement("td");
+                    const addHabit = makeElement("button", "subtle-button", "Add habit");
+                    addHabit.type = "button";
+                    addHabit.dataset.addHabitFor = String(user.id);
+                    const remove = makeElement("button", "admin-delete", "Delete");
+                    remove.type = "button";
+                    remove.dataset.deleteUser = String(user.id);
+                    remove.disabled = Number(user.id) === Number(state.user.id);
+                    manageCell.append(addHabit, remove);
+                    row.append(manageCell);
+                    rows.append(row);
+                });
+                const habitRows = document.getElementById("adminHabits");
+                habitRows.replaceChildren();
+                habits.forEach(habit => {
+                    const row = makeElement("tr");
+                    row.dataset.habitId = String(habit.id);
+                    row.append(
+                        makeElement("td", "", habit.name),
+                        makeElement("td", "", `${habit.user_name} · ${habit.user_email}`),
+                        makeElement("td", "", habit.category),
+                        makeElement("td", "", habit.frequency === "weekly" ? "Weekly" : "Daily")
+                    );
+                    const actions = makeElement("td");
+                    const edit = makeElement("button", "subtle-button", "Rename");
+                    edit.type = "button";
+                    edit.dataset.editHabit = String(habit.id);
+                    edit.dataset.name = habit.name;
+                    const remove = makeElement("button", "admin-delete", "Delete");
+                    remove.type = "button";
+                    remove.dataset.deleteHabit = String(habit.id);
+                    actions.append(edit, remove);
+                    row.append(actions);
+                    habitRows.append(row);
+                });
+            } catch (error) {
+                showToast(error.message);
+            }
+        }
+
+        function closeHabitDialog() {
+            habitDialog.close();
+            habitForm.reset();
+            state.adminHabitOwnerId = null;
+        }
+
+        document.getElementById("openHabitDialog").addEventListener("click", () => {
+            state.adminHabitOwnerId = null;
+            habitDialog.showModal();
+        });
+        document.getElementById("closeHabitDialog").addEventListener("click", closeHabitDialog);
+        document.getElementById("cancelHabitDialog").addEventListener("click", closeHabitDialog);
+
+        habitForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!habitForm.reportValidity()) return;
+            try {
+                const ownerId = state.adminHabitOwnerId;
+                await api(ownerId ? `/api/admin/users/${ownerId}/habits` : "/api/habits", {
+                    method: "POST",
+                    body: {
+                        name: document.getElementById("habitNameInput").value.trim(),
+                        category: document.getElementById("habitCategoryInput").value,
+                        frequency: document.getElementById("habitFrequencyInput").value
+                    }
+                });
+                closeHabitDialog();
+                if (ownerId) await showAdminPanel();
+                else await refreshDashboard();
+                showToast("Your new habit is ready.");
+            } catch (error) {
+                showToast(error.message);
+            }
+        });
+
+        habitList.addEventListener("click", async (event) => {
+            const button = event.target.closest(".check-button");
+            if (!button || button.disabled) return;
+            try {
+                await api(`/api/habits/${button.dataset.habitId}/complete`, { method: "POST", body: { date: localDateKey() } });
+                await refreshDashboard();
+                showToast("Nice work showing up today.");
+            } catch (error) {
+                showToast(error.message);
+            }
+        });
+
+        document.getElementById("authSwitch").addEventListener("click", () => setAuthMode(!state.register));
+        authForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const errorElement = document.getElementById("authError");
+            errorElement.hidden = true;
+            const body = {
+                email: document.getElementById("authEmail").value.trim(),
+                password: document.getElementById("authPassword").value
+            };
+            if (state.register) body.name = document.getElementById("authName").value.trim();
+            try {
+                const result = await api(`/api/auth/${state.register ? "register" : "login"}`, { method: "POST", body });
+                state.csrf = result.csrf_token || state.csrf;
+                showApp(result.user);
+            } catch (error) {
+                errorElement.textContent = error.message;
+                errorElement.hidden = false;
+            }
+        });
+
+        document.getElementById("adminNavLink").addEventListener("click", (event) => {
+            event.preventDefault();
+            if (state.user.role === "admin") showAdminPanel();
+        });
+
+        document.getElementById("adminUsers").addEventListener("change", async (event) => {
+            const select = event.target.closest("select");
+            if (!select) return;
+            const userId = select.closest("tr").dataset.userId;
+            try {
+                await api(`/api/admin/users/${userId}/role`, { method: "PUT", body: { role: select.value } });
+                showToast("Account role updated.");
+                if (Number(userId) === Number(state.user.id) && select.value !== "admin") {
+                    state.user.role = select.value;
+                    showApp(state.user);
+                    return;
+                }
+                await showAdminPanel();
+            } catch (error) {
+                showToast(error.message);
+                await showAdminPanel();
+            }
+        });
+
+        document.getElementById("adminUsers").addEventListener("click", async (event) => {
+            const addHabit = event.target.closest("[data-add-habit-for]");
+            if (addHabit) {
+                state.adminHabitOwnerId = addHabit.dataset.addHabitFor;
+                habitDialog.showModal();
+                return;
+            }
+            const button = event.target.closest("[data-delete-user]");
+            if (!button || !window.confirm("Delete this account and all of its habit data? This cannot be undone.")) return;
+            try {
+                await api(`/api/admin/users/${button.dataset.deleteUser}`, { method: "DELETE" });
+                showToast("Account deleted.");
+                await showAdminPanel();
+            } catch (error) {
+                showToast(error.message);
+            }
+        });
+
+        document.getElementById("adminHabits").addEventListener("click", async (event) => {
+            const editButton = event.target.closest("[data-edit-habit]");
+            const deleteButton = event.target.closest("[data-delete-habit]");
+            if (editButton) {
+                const name = window.prompt("Update the habit name:", editButton.dataset.name);
+                if (!name || !name.trim()) return;
+                try {
+                    const habits = await api("/api/admin/habits");
+                    const habit = habits.find(item => String(item.id) === editButton.dataset.editHabit);
+                    if (!habit) throw new Error("Habit not found.");
+                    await api(`/api/admin/habits/${habit.id}`, {
+                        method: "PUT",
+                        body: { ...habit, name: name.trim() }
+                    });
+                    showToast("Habit updated.");
+                    await showAdminPanel();
+                } catch (error) {
+                    showToast(error.message);
+                }
+            } else if (deleteButton && window.confirm("Delete this habit and its check-in history? This cannot be undone.")) {
+                try {
+                    await api(`/api/admin/habits/${deleteButton.dataset.deleteHabit}`, { method: "DELETE" });
+                    showToast("Habit deleted.");
+                    await showAdminPanel();
+                } catch (error) {
+                    showToast(error.message);
+                }
+            }
+        });
+
+        document.getElementById("previousMonth").addEventListener("click", async () => {
+            state.calendarMonth.setMonth(state.calendarMonth.getMonth() - 1);
+            try { await refreshCalendar(); } catch (error) { showToast(error.message); }
+        });
+        document.getElementById("nextMonth").addEventListener("click", async () => {
+            state.calendarMonth.setMonth(state.calendarMonth.getMonth() + 1);
+            try { await refreshCalendar(); } catch (error) { showToast(error.message); }
+        });
+
+        document.getElementById("logoutButton").addEventListener("click", async () => {
+            try {
+                const result = await api("/api/auth/logout", { method: "POST", body: {} });
+                state.csrf = result.csrf_token || "";
+                state.user = null;
+                showAuth();
+            } catch (error) {
+                showToast(error.message);
+            }
+        });
+
+        document.getElementById("notificationButton").addEventListener("click", () => showToast("You're all caught up."));
+        document.getElementById("viewAllButton").addEventListener("click", () => habitList.scrollIntoView({ behavior: "smooth" }));
+
+        async function initialize() {
+            setAuthMode(false);
+            try {
+                const identity = await api("/api/auth/me");
+                state.csrf = identity.csrf_token || "";
+                if (identity.authenticated) showApp(identity.user);
+                else showAuth();
+            } catch (error) {
+                showAuth();
+                document.getElementById("authError").textContent = `Open this dashboard from the app server to connect to your account. ${error.message}`;
+                document.getElementById("authError").hidden = false;
+            }
+        }
+
+        initialize();
+    </script>
 </body>
 
 </html>

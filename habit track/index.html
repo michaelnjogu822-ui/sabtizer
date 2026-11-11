@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="description" content="Build a steadier, kinder habit practice.">
+  <link rel="icon" href="data:,">
+  <title>steadier — your habit space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-visual">
+      <a class="brand brand-light" href="#"><span class="brand-symbol"><i class="fa-solid fa-leaf"></i></span>steadier<span class="brand-dot">.</span></a>
+      <div class="auth-visual-copy">
+        <span class="overline overline-light">GROW AT YOUR OWN PACE</span>
+        <h1>Small steps.<br>Real change.</h1>
+        <p>A calm, private space to build the habits that feel good to you. No perfection required.</p>
+        <div class="auth-mantra"><i class="fa-regular fa-sun"></i><span>Start where you are. Begin again whenever you need.</span></div>
+      </div>
+      <span class="auth-decoration decoration-one"></span><span class="auth-decoration decoration-two"></span>
+      <div class="auth-visual-footer">A little more steady, every day.</div>
+    </div>
+    <div class="auth-form-side">
+      <div class="auth-card">
+        <div class="auth-heading">
+          <span class="overline" id="auth-eyebrow">WELCOME BACK</span>
+          <h2 id="auth-title">Your next small step awaits.</h2>
+          <p id="auth-subtitle">Sign in to pick up where you left off.</p>
+        </div>
+        <form id="auth-form">
+          <div class="form-field" id="name-field" hidden>
+            <label for="auth-name">Your name</label>
+            <input id="auth-name" name="name" autocomplete="name" maxlength="60" placeholder="How should we call you?">
+          </div>
+          <div class="form-field">
+            <label for="auth-email">Email address</label>
+            <div class="input-icon"><i class="fa-regular fa-envelope"></i><input id="auth-email" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com"></div>
+          </div>
+          <div class="form-field">
+            <label for="auth-password">Password</label>
+            <div class="input-icon"><i class="fa-solid fa-lock"></i><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="At least 10 characters"><button class="password-toggle" type="button" aria-label="Show password"><i class="fa-regular fa-eye"></i></button></div>
+          </div>
+          <p class="form-error" id="auth-error" role="alert" hidden></p>
+          <button class="primary-button auth-submit" id="auth-submit" type="submit">Sign in <i class="fa-solid fa-arrow-right"></i></button>
+        </form>
+        <p class="auth-switch"><span id="auth-switch-copy">New here?</span> <button id="auth-switch" type="button">Create an account</button></p>
+        <p class="auth-privacy"><i class="fa-solid fa-shield-halved"></i> Your account keeps your data private to you.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" data-page="dashboard"><span class="brand-symbol"><i class="fa-solid fa-leaf"></i></span>steadier<span class="brand-dot">.</span></a>
+      <div class="workspace-label">YOUR SPACE <span>PERSONAL</span></div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-page="dashboard"><i class="fa-solid fa-house"></i><span>Dashboard</span></button>
+        <button class="nav-link" data-page="habits"><i class="fa-solid fa-list-check"></i><span>My Habits</span><span class="nav-count" id="nav-habit-count">0</span></button>
+        <button class="nav-link" data-page="calendar"><i class="fa-regular fa-calendar"></i><span>Calendar</span></button>
+        <button class="nav-link" data-page="analytics"><i class="fa-solid fa-chart-simple"></i><span>Analytics</span></button>
+      </nav>
+      <div class="nav-divider"></div>
+      <p class="nav-section-label">MORE FOR YOU</p>
+      <nav class="main-nav secondary-nav" aria-label="More features">
+        <button class="nav-link" data-page="journal"><i class="fa-solid fa-book-open"></i><span>Daily Journal</span></button>
+        <button class="nav-link" data-page="focus"><i class="fa-regular fa-clock"></i><span>Focus Timer</span></button>
+        <button class="nav-link" data-page="assistant"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Habit Assistant</span><span class="assistant-badge">BETA</span></button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-quote"><i class="fa-solid fa-quote-left"></i><p>Consistency is not about being perfect. It’s about showing up again.</p><span>A NOTE TO YOURSELF</span></div>
+      <div class="sidebar-profile">
+        <span class="profile-avatar" id="sidebar-avatar">S</span>
+        <span class="profile-info"><strong id="sidebar-name">Your space</strong><small>Personal workspace</small></span>
+        <button class="icon-button sidebar-menu" id="logout-button" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+        <div class="breadcrumb"><span>My space</span><i class="fa-solid fa-chevron-right"></i><strong id="page-title">Dashboard</strong></div>
+        <div class="topbar-actions"><span class="today-date" id="today-date"></span><button class="topbar-theme" id="theme-button" aria-label="Toggle color theme" title="Toggle color theme"><i class="fa-regular fa-moon"></i></button><span class="topbar-divider"></span><button class="topbar-avatar" id="profile-button" aria-label="Edit profile">S</button></div>
+      </header>
+
+      <div class="page-wrap" id="page-content" tabindex="-1"></div>
+      <footer class="app-footer"><span>Made for steady progress, not perfection.</span><button id="privacy-button"><i class="fa-solid fa-shield-halved"></i> Privacy &amp; support</button></footer>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close icon-button" id="modal-close" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
+      <div id="modal-content"></div>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>
