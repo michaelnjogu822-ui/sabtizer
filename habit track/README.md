@@ -52,6 +52,7 @@ Use the pooled Neon URL for serverless deployments. Configure the environment va
 ## What's included
 
 - Account registration, login, logout, hashed passwords, and profile/password updates.
+- Downloadable JSON export of your account, habits, completion history, mood check-ins, journal entries, streak freezes, and focus sessions.
 - User/admin roles, one-time environment bootstrap or CLI promotion, and administrator account management.
 - Per-user habit CRUD, categories, schedules, icons, colors, preferred times, reminders, and completion history.
 - Personalized dashboard with daily completion progress, weekly activity and goals, next-step actions, streaks, XP/levels, and milestone badges.
