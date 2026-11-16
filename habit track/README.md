@@ -24,19 +24,23 @@ Open <http://127.0.0.1:5000> for the full habit app, or <http://127.0.0.1:5000/o
 New accounts always receive the `user` role. To create the first administrator on a fresh install, set these variables before starting the server:
 
 ```powershell
+$env:ADMIN_ALLOWLIST_EMAIL = "admin@example.com"
 $env:ADMIN_EMAIL = "admin@example.com"
 $env:ADMIN_NAME = "Workspace Admin"
 $env:ADMIN_PASSWORD = "use-a-unique-password-of-at-least-10-characters"
 python app.py
 ```
 
-The environment bootstrap runs once and records that it has been applied. Remove the administrator variables after setup. To promote an already registered account instead, run this once from this folder:
+The environment bootstrap runs once and records that it has been applied. Remove `ADMIN_EMAIL`, `ADMIN_NAME`, and `ADMIN_PASSWORD` after setup; keep `ADMIN_ALLOWLIST_EMAIL` configured. To promote an already registered account instead, run this once from this folder:
 
 ```powershell
+$env:ADMIN_ALLOWLIST_EMAIL = "admin@example.com"
 python app.py promote-admin admin@example.com
 ```
 
-Administrators can view workspace totals, promote or demote accounts, create, rename, and delete any user's habits, and delete accounts with their associated data from the Overview's Admin console. The last administrator cannot be demoted or deleted. Regular accounts can manage only their own habits and data.
+The designated administrator can view workspace totals, create, rename, and delete any user's habits, and delete other accounts with their associated data from the Overview's Admin console. The designated administrator cannot be demoted or deleted. Regular accounts can manage only their own habits and data.
+
+Only the account matching `ADMIN_ALLOWLIST_EMAIL` can have administrator access. The separate `/admin` page shows account totals, tracked sign-ins and sign-ups, recent authentication activity, active habits, and check-ins. Sign-in history starts when that feature is deployed; earlier logins are not available.
 
 ## Deploy to Vercel with Neon
 
@@ -44,8 +48,9 @@ The app uses local SQLite by default for development. On Vercel, configure `DATA
 
 1. In Vercel, import the GitHub repository and set **Root Directory** to `habit track`.
 2. Create a Neon project and copy its pooled PostgreSQL connection string into the Vercel `DATABASE_URL` environment variable.
-3. Add a long, random `SECRET_KEY`. To bootstrap the first admin, also set `ADMIN_EMAIL`, `ADMIN_NAME`, and `ADMIN_PASSWORD`.
-4. Deploy. Visit `/overview` for the redesigned dashboard or `/` for the full habit tracker. After the first successful admin setup, remove the `ADMIN_*` values and redeploy.
+3. Add a long, random `SECRET_KEY` and set `ADMIN_ALLOWLIST_EMAIL` to the one administrator account.
+4. To bootstrap the first admin on a fresh database, also set `ADMIN_EMAIL` to the same address, plus `ADMIN_NAME` and `ADMIN_PASSWORD`.
+5. Deploy. Visit `/overview` for the redesigned dashboard, `/` for the full habit tracker, or `/admin` for the private activity dashboard. After the first successful admin setup, remove `ADMIN_EMAIL`, `ADMIN_NAME`, and `ADMIN_PASSWORD`; keep `ADMIN_ALLOWLIST_EMAIL` configured.
 
 Use the pooled Neon URL for serverless deployments. Configure the environment variables for Production (and Preview if you want preview deployments to use a separate database). Never commit database URLs, passwords, or secret keys.
 
@@ -53,7 +58,8 @@ Use the pooled Neon URL for serverless deployments. Configure the environment va
 
 - Account registration, login, logout, hashed passwords, and profile/password updates.
 - Downloadable JSON export of your account, habits, completion history, mood check-ins, journal entries, streak freezes, and focus sessions.
-- User/admin roles, one-time environment bootstrap or CLI promotion, and administrator account management.
+- Single-account administrator allowlist, one-time environment bootstrap or CLI promotion, and administrator account management.
+- Private admin activity page with tracked sign-ins, sign-ups, account totals, habit usage, and recent activity.
 - Per-user habit CRUD, categories, schedules, icons, colors, preferred times, reminders, and completion history.
 - Personalized dashboard with daily completion progress, weekly activity and goals, next-step actions, streaks, XP/levels, and milestone badges.
 - Weekly/monthly charts, habit consistency summaries, mood tracking, daily journaling, and a focus timer.

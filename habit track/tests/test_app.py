@@ -22,6 +22,7 @@ class HabitTrackerTests(unittest.TestCase):
         cls.temp_dir.cleanup()
 
     def setUp(self):
+        habit_app.app.config["ADMIN_ALLOWLIST_EMAIL"] = ""
         with habit_app.app.app_context():
             habit_app.get_db().execute("DELETE FROM users")
             habit_app.get_db().commit()
@@ -74,6 +75,7 @@ class HabitTrackerTests(unittest.TestCase):
         self.second_csrf = self._register(
             self.second_client, self.second_csrf, "Sam", "sam@example.test"
         )
+        habit_app.app.config["ADMIN_ALLOWLIST_EMAIL"] = "alex@example.test"
         self.assertEqual(self.client.get("/api/admin/users").status_code, 403)
         self.assertEqual(self.client.get("/api/admin/habits").status_code, 403)
         self.assertEqual(
@@ -93,6 +95,7 @@ class HabitTrackerTests(unittest.TestCase):
             db.commit()
         identity = self.client.get("/api/auth/me").get_json()
         self.assertEqual(identity["user"]["role"], "admin")
+        self.assertTrue(identity["user"]["is_admin"])
         self.csrf = identity["csrf_token"]
 
         created = self._request(
@@ -141,13 +144,8 @@ class HabitTrackerTests(unittest.TestCase):
         promoted = self._request(
             self.client, self.csrf, "PUT", "/api/admin/users/2/role", {"role": "admin"}
         )
-        self.assertEqual(promoted.status_code, 200)
-        self.assertEqual(self.second_client.get("/api/auth/me").get_json()["user"]["role"], "admin")
-
-        demoted = self._request(
-            self.client, self.csrf, "PUT", "/api/admin/users/2/role", {"role": "user"}
-        )
-        self.assertEqual(demoted.status_code, 200)
+        self.assertEqual(promoted.status_code, 403)
+        self.assertEqual(self.second_client.get("/api/auth/me").get_json()["user"]["role"], "user")
         deleted = self._request(self.client, self.csrf, "DELETE", "/api/admin/users/2")
         self.assertEqual(deleted.status_code, 200)
         self.assertEqual(self.client.get("/api/admin/habits").get_json(), [])
@@ -155,6 +153,7 @@ class HabitTrackerTests(unittest.TestCase):
 
     def test_admin_cannot_delete_or_demote_the_last_admin(self):
         self.csrf = self._register(self.client, self.csrf, "Alex", "alex@example.test")
+        habit_app.app.config["ADMIN_ALLOWLIST_EMAIL"] = "alex@example.test"
         with habit_app.app.app_context():
             habit_app.get_db().execute(
                 "UPDATE users SET role = 'admin' WHERE email = ?", ("alex@example.test",)
@@ -169,6 +168,7 @@ class HabitTrackerTests(unittest.TestCase):
         self.assertEqual(self.client.get("/api/auth/me").get_json()["user"]["role"], "admin")
 
     def test_env_bootstrap_creates_one_admin_once(self):
+        habit_app.app.config["ADMIN_ALLOWLIST_EMAIL"] = "owner@example.test"
         with habit_app.app.app_context():
             db = habit_app.get_db()
             db.execute("DELETE FROM users")
@@ -229,9 +229,13 @@ class HabitTrackerTests(unittest.TestCase):
 
     def test_promote_admin_requires_existing_valid_account(self):
         self.csrf = self._register(self.client, self.csrf, "Alex", "alex@example.test")
+        habit_app.app.config["ADMIN_ALLOWLIST_EMAIL"] = "alex@example.test"
         with self.assertRaises(ValueError):
             with habit_app.app.app_context():
                 habit_app.promote_admin("missing@example.test")
+        with self.assertRaisesRegex(ValueError, "designated administrator"):
+            with habit_app.app.app_context():
+                habit_app.promote_admin("someone-else@example.test")
         with habit_app.app.app_context():
             self.assertEqual(habit_app.promote_admin("ALEX@example.test"), "alex@example.test")
             role = habit_app.get_db().execute(
@@ -376,11 +380,11 @@ class HabitTrackerTests(unittest.TestCase):
         self._request(
             self.client,
             self.csrf,
+
             "POST",
             "/api/mood",
             {"date": today, "mood": "Motivated"},
         )
-
         self.assertIsNone(self.second_client.get(f"/api/journal?date={today}").get_json()["entry"])
         self.assertEqual(self.second_client.get("/api/mood").get_json(), [])
         dashboard = self.second_client.get("/api/dashboard").get_json()

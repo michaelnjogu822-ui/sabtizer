@@ -1223,6 +1223,7 @@
                     <p class="eyebrow">Workspace controls</p>
                     <h1 id="adminTitle">Admin console</h1>
                     <p class="welcome-copy">Manage accounts and review usage across the workspace.</p>
+                    <p><a class="subtle-button" href="/admin">Open activity dashboard</a></p>
                     <div class="admin-summary" id="adminSummary"></div>
                     <div class="section-heading"><h2>Accounts</h2></div>
                     <div class="admin-table-wrap">
@@ -1346,8 +1347,8 @@
             document.getElementById("authScreen").hidden = true;
             document.getElementById("app").hidden = false;
             document.getElementById("profileName").textContent = user.name;
-            document.getElementById("profileCaption").textContent = user.role === "admin" ? "Administrator" : "Personal account";
-            document.getElementById("adminNavItem").hidden = user.role !== "admin";
+            document.getElementById("profileCaption").textContent = user.is_admin ? "Administrator" : "Personal account";
+            document.getElementById("adminNavItem").hidden = !user.is_admin;
             document.getElementById("todayDate").textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date());
             showDashboard();
         }
@@ -1476,6 +1477,7 @@
                         role.append(option);
                     });
                     role.value = user.role;
+                    role.disabled = true;
                     roleCell.append(role);
                     row.append(roleCell, makeElement("td", "", String(user.active_habits)), makeElement("td", "", String(user.completions)));
                     const manageCell = makeElement("td");
@@ -1587,7 +1589,7 @@
 
         document.getElementById("adminNavLink").addEventListener("click", (event) => {
             event.preventDefault();
-            if (state.user.role === "admin") showAdminPanel();
+            if (state.user.is_admin) showAdminPanel();
         });
 
         document.getElementById("adminUsers").addEventListener("change", async (event) => {
@@ -1599,6 +1601,7 @@
                 showToast("Account role updated.");
                 if (Number(userId) === Number(state.user.id) && select.value !== "admin") {
                     state.user.role = select.value;
+                    state.user.is_admin = false;
                     showApp(state.user);
                     return;
                 }

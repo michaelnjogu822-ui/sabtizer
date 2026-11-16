@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin activity · Sabtizer</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #23332a;
+            background: #f4f6f1;
+            font-synthesis: none;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { margin: 0; min-width: 320px; }
+
+        a { color: #315d43; }
+
+        main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 64px; }
+
+        .topbar, .heading, .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand { font-size: 0.9rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+        .back-link { font-size: 0.92rem; font-weight: 650; text-decoration: none; }
+        .eyebrow { margin: 40px 0 8px; color: #52705c; font-size: 0.76rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.045em; }
+        .intro { max-width: 720px; margin: 12px 0 0; color: #607066; line-height: 1.6; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 14px;
+            margin: 28px 0 36px;
+        }
+
+        .stat, .activity-card {
+            border: 1px solid #e0e6dc;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 8px 26px rgb(34 54 41 / 4%);
+        }
+
+        .stat { min-height: 126px; padding: 20px; }
+        .stat-label { display: block; color: #607066; font-size: 0.88rem; line-height: 1.35; }
+        .stat-value { display: block; margin-top: 16px; font-size: 2rem; font-variant-numeric: tabular-nums; font-weight: 750; }
+        .section-heading { margin-bottom: 14px; }
+        h2 { margin: 0; font-size: 1.2rem; }
+
+        button {
+            border: 1px solid #cad6c9;
+            border-radius: 999px;
+            background: #fff;
+            color: #315d43;
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 650;
+            padding: 9px 15px;
+        }
+
+        button:hover { background: #f0f5ef; }
+        button:focus-visible, a:focus-visible { outline: 3px solid #91b79a; outline-offset: 3px; }
+        .activity-card { overflow: hidden; }
+        .activity-table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 15px 18px; border-bottom: 1px solid #e8ece6; white-space: nowrap; }
+        th { color: #607066; font-size: 0.77rem; letter-spacing: 0.06em; text-transform: uppercase; }
+        td { font-size: 0.91rem; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .event-label { display: inline-block; border-radius: 999px; background: #edf4ed; color: #315d43; font-size: 0.78rem; font-weight: 700; padding: 5px 9px; }
+        .user-email { display: block; margin-top: 3px; color: #738076; font-size: 0.83rem; }
+        .empty, .error { padding: 24px 18px; color: #607066; }
+        .error { color: #9c3d34; }
+        .footnote { margin: 15px 0 0; color: #738076; font-size: 0.84rem; line-height: 1.5; }
+
+        @media (max-width: 600px) {
+            main { width: min(100% - 24px, 1120px); padding-top: 24px; }
+            .topbar { align-items: flex-start; }
+            .section-heading { align-items: flex-start; }
+            th, td { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="topbar">
+            <span class="brand">Sabtizer · Admin</span>
+            <a class="back-link" href="/overview">Back to the app</a>
+        </div>
+        <p class="eyebrow">Private workspace reporting</p>
+        <div class="heading">
+            <h1>Activity overview</h1>
+            <button id="refreshButton" type="button">Refresh</button>
+        </div>
+        <p class="intro">Account totals, sign-in activity, and a snapshot of habit usage. Only the designated administrator can access this page.</p>
+
+        <section class="stats" id="stats" aria-label="Workspace statistics" aria-live="polite">
+            <div class="stat"><span class="stat-label">Registered accounts</span><strong class="stat-value" data-stat="accounts">—</strong></div>
+            <div class="stat"><span class="stat-label">Users signed in since tracking began</span><strong class="stat-value" data-stat="users_signed_in">—</strong></div>
+            <div class="stat"><span class="stat-label">Successful sign-ins tracked</span><strong class="stat-value" data-stat="sign_ins">—</strong></div>
+            <div class="stat"><span class="stat-label">Sign-ins in the last 7 days</span><strong class="stat-value" data-stat="sign_ins_7d">—</strong></div>
+            <div class="stat"><span class="stat-label">Active users in the last 7 days</span><strong class="stat-value" data-stat="active_users_7d">—</strong></div>
+            <div class="stat"><span class="stat-label">Sign-ups in the last 30 days</span><strong class="stat-value" data-stat="signups_30d">—</strong></div>
+            <div class="stat"><span class="stat-label">Active habits</span><strong class="stat-value" data-stat="active_habits">—</strong></div>
+            <div class="stat"><span class="stat-label">Habit check-ins</span><strong class="stat-value" data-stat="check_ins">—</strong></div>
+        </section>
+
+        <section aria-labelledby="activityTitle">
+            <div class="section-heading">
+                <h2 id="activityTitle">Recent sign-ins and sign-ups</h2>
+                <span id="status" role="status" aria-live="polite"></span>
+            </div>
+            <div class="activity-card">
+                <div class="activity-table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Activity</th><th>Account</th><th>When</th></tr>
+                        </thead>
+                        <tbody id="activityRows"></tbody>
+                    </table>
+                    <div class="empty" id="emptyState" hidden>No sign-in or sign-up activity has been captured yet.</div>
+                    <div class="error" id="errorState" hidden></div>
+                </div>
+            </div>
+            <p class="footnote">Sign-in history starts when this update goes live; earlier logins cannot be reconstructed. This page records sign-ins and sign-ups only, not IP addresses.</p>
+        </section>
+    </main>
+
+    <script>
+        const statusElement = document.getElementById("status");
+        const rowsElement = document.getElementById("activityRows");
+        const emptyElement = document.getElementById("emptyState");
+        const errorElement = document.getElementById("errorState");
+
+        function formatDate(value) {
+            const isoValue = value.includes("T") ? value : `${value.replace(" ", "T")}Z`;
+            const parsed = new Date(isoValue);
+            return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+        }
+
+        function addCell(row, value) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.append(cell);
+        }
+
+        async function loadActivity() {
+            statusElement.textContent = "Loading…";
+            errorElement.hidden = true;
+            emptyElement.hidden = true;
+            try {
+                const response = await fetch("/api/admin/activity", {
+                    headers: { Accept: "application/json" },
+                    cache: "no-store"
+                });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
+
+                document.querySelectorAll("[data-stat]").forEach((element) => {
+                    element.textContent = Number(payload[element.dataset.stat]).toLocaleString();
+                });
+                rowsElement.replaceChildren();
+                payload.recent_activity.forEach((entry) => {
+                    const row = document.createElement("tr");
+                    const eventCell = document.createElement("td");
+                    const eventLabel = document.createElement("span");
+                    eventLabel.className = "event-label";
+                    eventLabel.textContent = entry.event_type === "signup" ? "Signed up" : "Signed in";
+                    eventCell.append(eventLabel);
+                    row.append(eventCell);
+
+                    const accountCell = document.createElement("td");
+                    accountCell.textContent = entry.name;
+                    const email = document.createElement("span");
+                    email.className = "user-email";
+                    email.textContent = entry.email;
+                    accountCell.append(email);
+                    row.append(accountCell);
+                    addCell(row, formatDate(entry.occurred_at));
+                    rowsElement.append(row);
+                });
+                emptyElement.hidden = payload.recent_activity.length > 0;
+                statusElement.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                statusElement.textContent = "";
+                errorElement.textContent = error.message || "Unable to load activity.";
+                errorElement.hidden = false;
+            }
+        }
+
+        document.getElementById("refreshButton").addEventListener("click", loadActivity);
+        loadActivity();
+    </script>
+</body>
+</html>
